@@ -11,12 +11,26 @@ Self-contained: no imports from oloric.src.*
 
 import argparse
 import gc
+import hashlib
 import json
 import os
 import sys
 import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+
+
+# ---------------------------------------------------------------------------
+# SHA-256 helper
+# ---------------------------------------------------------------------------
+
+def sha256_file(path: str) -> str:
+    """Compute SHA-256 hex digest of a file."""
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest().upper()
 
 
 # ---------------------------------------------------------------------------
@@ -299,6 +313,8 @@ def run_test(
 
         # --- Step 7: Training ---
         print(f"  Starting training ({num_steps} steps)...")
+        # Transformers 5.x removed warmup_ratio; for a smoke test warmup_steps=0
+        # is the correct setting — no warm-up over only 5-10 steps.
         training_args = TrainingArguments(
             output_dir=checkpoint_dir,
             num_train_epochs=999,  # we'll stop by max_steps
@@ -310,7 +326,7 @@ def run_test(
             learning_rate=2e-4,
             weight_decay=0.01,
             max_grad_norm=0.3,
-            warmup_ratio=0.03,
+            warmup_steps=0,  # replaces deprecated warmup_ratio; 0 is correct for smoke test
             lr_scheduler_type="cosine",
             logging_steps=1,
             save_steps=num_steps,  # save at end
@@ -561,13 +577,60 @@ def run_smoke_tests(data_file: str, output_dir: str, tests: List[str]):
         print("  Examples: 10-20 real, Steps: 10, SeqLen: 2048")
         print("=" * 60)
 
+        # --- Dataset pre-flight checks ---
         if not os.path.exists(data_file):
-            print(f"ERROR: data file not found: {data_file}")
-            all_measurements["tests"]["real"] = {"error": f"File not found: {data_file}"}
+            msg = (
+                f"MISSING DATASET: {data_file}\n"
+                "The audited 480-example Oloric training dataset is not present.\n"
+                "Ensure data/generated/enhanced_seed_data.jsonl is tracked in Git\n"
+                "and that the repository was fully cloned before running this test."
+            )
+            print(f"\nERROR: {msg}")
+            all_measurements["tests"]["real"] = {"error": msg}
         else:
+            # Count examples
+            with open(data_file, "r", encoding="utf-8") as _f:
+                dataset_count = sum(1 for ln in _f if ln.strip())
+            # Compute SHA-256
+            dataset_sha256 = sha256_file(data_file)
+
+            print(f"  Dataset file : {data_file}")
+            print(f"  Example count: {dataset_count}")
+            print(f"  SHA-256      : {dataset_sha256}")
+
+            if dataset_count < 100:
+                print(f"  WARNING: Only {dataset_count} examples found; expected 480.")
+
+            # Validate JSON structure (first 5 examples)
+            validation_errors = 0
+            with open(data_file, "r", encoding="utf-8") as _f:
+                for i, ln in enumerate(_f):
+                    ln = ln.strip()
+                    if not ln:
+                        continue
+                    try:
+                        json.loads(ln)
+                    except json.JSONDecodeError as e:
+                        print(f"  JSON error on line {i + 1}: {e}")
+                        validation_errors += 1
+                    if i >= 4:  # check first 5
+                        break
+            if validation_errors == 0:
+                print("  JSON structure: PASS (first 5 examples valid)")
+            else:
+                print(f"  JSON structure: FAIL ({validation_errors} errors in first 5 examples)")
+
+            # Store metadata in measurements
+            all_measurements["dataset"] = {
+                "path": data_file,
+                "count": dataset_count,
+                "sha256": dataset_sha256,
+                "json_errors_in_sample": validation_errors,
+            }
+
             real_examples = load_real_examples(data_file, max_examples=20)
             if len(real_examples) < 10:
-                print(f"WARNING: only {len(real_examples)} examples loaded (wanted 10-20)")
+                print(f"  WARNING: only {len(real_examples)} examples loaded (wanted 10-20)")
 
             results_b = run_test(
                 test_name="real",

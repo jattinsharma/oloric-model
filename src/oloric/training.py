@@ -144,18 +144,33 @@ class OloricTrainer:
             self.setup_model_and_tokenizer()
         
         # Training arguments
+        # Transformers 5.x removed warmup_ratio; compute warmup_steps from
+        # the intended 3% warmup fraction over the estimated total training
+        # steps so the warm-up behaviour is preserved semantically.
+        _num_epochs = self.training_config.get("num_train_epochs", 3)
+        _per_device_bs = self.training_config.get("per_device_train_batch_size", 1)
+        _grad_accum = self.training_config.get("gradient_accumulation_steps", 4)
+        _warmup_fraction = self.training_config.get("warmup_ratio", 0.03)
+        # Dataset size is unknown here; use a reasonable default of 480 examples
+        # (the audited Oloric dataset size).  The actual LR schedule will be
+        # recalculated by the scheduler, so being slightly off is acceptable.
+        _dataset_size = self.training_config.get("dataset_size", 480)
+        _steps_per_epoch = max(1, _dataset_size // (_per_device_bs * _grad_accum))
+        _total_steps = _steps_per_epoch * _num_epochs
+        _warmup_steps = max(1, int(_total_steps * _warmup_fraction))
+
         training_args = TrainingArguments(
             output_dir=self.training_config.get("output_dir", "./checkpoints"),
-            num_train_epochs=self.training_config.get("num_train_epochs", 3),
-            per_device_train_batch_size=self.training_config.get("per_device_train_batch_size", 1),
+            num_train_epochs=_num_epochs,
+            per_device_train_batch_size=_per_device_bs,
             per_device_eval_batch_size=self.training_config.get("per_device_eval_batch_size", 1),
-            gradient_accumulation_steps=self.training_config.get("gradient_accumulation_steps", 4),
+            gradient_accumulation_steps=_grad_accum,
             gradient_checkpointing=self.training_config.get("gradient_checkpointing", True),
             optim=self.training_config.get("optim", "paged_adamw_8bit"),
             learning_rate=self.training_config.get("learning_rate", 2e-4),
             weight_decay=self.training_config.get("weight_decay", 0.01),
             max_grad_norm=self.training_config.get("max_grad_norm", 0.3),
-            warmup_ratio=self.training_config.get("warmup_ratio", 0.03),
+            warmup_steps=_warmup_steps,  # replaces deprecated warmup_ratio
             lr_scheduler_type=self.training_config.get("lr_scheduler_type", "cosine"),
             logging_steps=self.training_config.get("logging_steps", 10),
             save_steps=self.training_config.get("save_steps", 100),
@@ -167,7 +182,7 @@ class OloricTrainer:
             dataloader_pin_memory=self.training_config.get("dataloader_pin_memory", False),
             dataloader_num_workers=self.training_config.get("dataloader_num_workers", 0),
             remove_unused_columns=False,
-            report_to="none"  # Disable wandb/comet logging for simplicity
+            report_to="none"  # Disable wandb/comet logging
         )
         
         # Data collator

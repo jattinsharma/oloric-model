@@ -42,7 +42,7 @@ training:
   learning_rate: 2e-4
   weight_decay: 0.01
   max_grad_norm: 0.3
-  warmup_ratio: 0.03
+  warmup_ratio: 0.03  # Preserved for documentation; training.py converts to warmup_steps
   lr_scheduler_type: "cosine"
   logging_steps: 10
   save_steps: 100

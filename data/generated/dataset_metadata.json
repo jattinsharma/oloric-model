@@ -1,0 +1,45 @@
+{
+  "name": "Oloric v0.1 Training Dataset",
+  "version": "1.0.0",
+  "description": "Audited 480-example dataset for Oloric v0.1 QLoRA fine-tuning. This is the authoritative training dataset for the first Oloric training run.",
+  "file": "enhanced_seed_data.jsonl",
+  "sha256": "67F755BE6643FEAD8372D95FDAB4560A14F42360CDB8D0DE2FE89E2FC9797527",
+  "example_count": 480,
+  "categories": {
+    "simple_explanation": 24,
+    "understanding_confirmation": 24,
+    "concrete_example": 24,
+    "memory_generation": 24,
+    "context_retention": 24,
+    "partial_understanding": 24,
+    "document_grounded": 24,
+    "diagnostic_questions": 24,
+    "socratic_questioning": 24,
+    "misconception_correction": 24,
+    "analogy_building": 24,
+    "prerequisite_check": 24,
+    "strategy_switching": 24,
+    "scaffolded_explanation": 24,
+    "multi_turn_progression": 24,
+    "difficulty_calibration": 24,
+    "follow_up_questions": 24,
+    "worked_example": 24,
+    "error_diagnosis": 24,
+    "knowledge_consolidation": 24
+  },
+  "domains": {
+    "general_academic": 80,
+    "science": 80,
+    "nutrition_food_science": 80,
+    "accountancy": 80,
+    "mathematics": 80,
+    "economics": 80
+  },
+  "audit_date": "2026-09-24",
+  "notes": [
+    "This file is committed to Git and must not be regenerated.",
+    "The SHA-256 hash is the authoritative integrity check.",
+    "Verified on Antigravity dev environment before push.",
+    "warmup_ratio in configs is read by training.py and converted to warmup_steps (Transformers 5.x compatibility)."
+  ]
+}

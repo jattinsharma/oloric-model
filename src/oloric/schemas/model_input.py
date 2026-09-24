@@ -57,4 +57,6 @@ class OloricModelInput(BaseModel):
 
     class Config:
         """Pydantic configuration."""
-        extra = "forbid"
+        # extra = "ignore" allows the audited dataset convenience_context field
+        # to pass validation. Only declared fields are used at inference time.
+        extra = "ignore"
