@@ -1,0 +1,140 @@
+{
+  "hardware": {
+    "gpu_name": "NVIDIA L4",
+    "total_vram_gb": 22.03,
+    "cuda_version": "12.8",
+    "torch_version": "2.8.0+cu128",
+    "gpu_count": 1,
+    "compute_capability": "8.9",
+    "transformers_version": "5.17.0",
+    "peft_version": "0.21.0",
+    "bitsandbytes_version": "0.50.2"
+  },
+  "tests": {
+    "synthetic": {
+      "test_name": "synthetic",
+      "num_examples": 5,
+      "max_length": 256,
+      "num_steps": 5,
+      "gradient_accumulation": 1,
+      "timestamp": "2026-09-24T19:00:42.348534+00:00",
+      "vram_baseline": {
+        "allocated_gb": 0.0,
+        "reserved_gb": 0.0,
+        "peak_allocated_gb": 0.0,
+        "peak_reserved_gb": 0.0
+      },
+      "model_load_time_seconds": 7.7,
+      "vram_after_model_load": {
+        "allocated_gb": 2.494,
+        "reserved_gb": 2.539,
+        "peak_allocated_gb": 2.53,
+        "peak_reserved_gb": 2.539
+      },
+      "vram_after_kbit_prep": {
+        "allocated_gb": 3.219,
+        "reserved_gb": 3.988,
+        "peak_allocated_gb": 3.943,
+        "peak_reserved_gb": 3.988
+      },
+      "vram_after_qlora_attach": {
+        "allocated_gb": 3.342,
+        "reserved_gb": 4.111,
+        "peak_allocated_gb": 3.943,
+        "peak_reserved_gb": 4.111
+      },
+      "trainable_params": 33030144,
+      "total_params": 2238840320,
+      "trainable_pct": 1.48,
+      "training_step_success": "PASS",
+      "training_loss": 2.3691,
+      "vram_after_training": {
+        "allocated_gb": 3.389,
+        "reserved_gb": 5.004,
+        "peak_allocated_gb": 4.639,
+        "peak_reserved_gb": 5.004
+      },
+      "loss_history": [
+        3.0329062938690186,
+        2.57600474357605,
+        2.5833218097686768,
+        1.9100924730300903,
+        1.7431621551513672
+      ],
+      "loss_decreasing": "YES",
+      "checkpoint_save": "PASS",
+      "checkpoint_path": "evaluation/smoke_test/checkpoint_synthetic",
+      "checkpoint_reload": "PASS",
+      "inference_after_reload": "PASS",
+      "inference_output_sample": "A student asks about gravity.\n\n### Output:\nYou must explain gravity in a simple, clear, and engaging way.\n\n### Constraints:\n- Keep it simple and avoid technical terms.\n- Use everyday examples.\n- Make "
+    },
+    "real": {
+      "test_name": "real",
+      "num_examples": 20,
+      "max_length": 2048,
+      "num_steps": 10,
+      "gradient_accumulation": 4,
+      "timestamp": "2026-09-24T19:01:23.952721+00:00",
+      "vram_baseline": {
+        "allocated_gb": 1.465,
+        "reserved_gb": 3.867,
+        "peak_allocated_gb": 1.465,
+        "peak_reserved_gb": 3.873
+      },
+      "model_load_time_seconds": 3.2,
+      "vram_after_model_load": {
+        "allocated_gb": 3.961,
+        "reserved_gb": 4.004,
+        "peak_allocated_gb": 3.998,
+        "peak_reserved_gb": 4.004
+      },
+      "vram_after_kbit_prep": {
+        "allocated_gb": 4.686,
+        "reserved_gb": 5.453,
+        "peak_allocated_gb": 5.41,
+        "peak_reserved_gb": 5.453
+      },
+      "vram_after_qlora_attach": {
+        "allocated_gb": 4.809,
+        "reserved_gb": 5.576,
+        "peak_allocated_gb": 5.41,
+        "peak_reserved_gb": 5.576
+      },
+      "trainable_params": 33030144,
+      "total_params": 2238840320,
+      "trainable_pct": 1.48,
+      "training_step_success": "PASS",
+      "training_loss": 1.6818,
+      "vram_after_training": {
+        "allocated_gb": 4.841,
+        "reserved_gb": 11.025,
+        "peak_allocated_gb": 9.898,
+        "peak_reserved_gb": 11.025
+      },
+      "loss_history": [
+        2.62748384475708,
+        2.225736618041992,
+        2.0231704711914062,
+        1.7828528881072998,
+        1.637380838394165,
+        1.4055781364440918,
+        1.3546783924102783,
+        1.2894433736801147,
+        1.250105619430542,
+        1.221604824066162
+      ],
+      "loss_decreasing": "YES",
+      "checkpoint_save": "PASS",
+      "checkpoint_path": "evaluation/smoke_test/checkpoint_real",
+      "checkpoint_reload": "PASS",
+      "inference_after_reload": "PASS",
+      "inference_output_sample": "[Response content]\n\n### Evaluation:\n[Pass/Fail]\n\n### Explanation:\n[Why it passed or failed]\n\n### Response:\n[Response content]\n\n### Evaluation:\n[Pass/Fail]\n\n### Explanation:\n[Why it passed or failed]\n\n"
+    }
+  },
+  "dataset": {
+    "path": "data/generated/enhanced_seed_data.jsonl",
+    "count": 480,
+    "sha256": "9DA9F5E9B45CA85F718B3E71FD8FB81881D46101D9815C7323411C30C7625921",
+    "json_errors_in_sample": 0
+  }
+}
