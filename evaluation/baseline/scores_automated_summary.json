@@ -1,0 +1,196 @@
+{
+  "timestamp": "2026-09-24T17:52:22.153219+00:00",
+  "responses_file": "evaluation/baseline/responses.jsonl",
+  "total_responses": 40,
+  "general_count": 20,
+  "structured_count": 20,
+  "general_aggregate": {
+    "schema_valid": {
+      "total": 0,
+      "passed": 0,
+      "pass_rate": 0.0
+    },
+    "has_action": {
+      "total": 0,
+      "passed": 0,
+      "pass_rate": 0.0
+    },
+    "has_strategy": {
+      "total": 0,
+      "passed": 0,
+      "pass_rate": 0.0
+    },
+    "has_response": {
+      "total": 0,
+      "passed": 0,
+      "pass_rate": 0.0
+    },
+    "has_diagnosis": {
+      "total": 0,
+      "passed": 0,
+      "pass_rate": 0.0
+    },
+    "has_understanding_check": {
+      "total": 0,
+      "passed": 0,
+      "pass_rate": 0.0
+    },
+    "has_memory": {
+      "total": 0,
+      "passed": 0,
+      "pass_rate": 0.0
+    },
+    "memory_structure_valid": {
+      "total": 0,
+      "passed": 0,
+      "pass_rate": 0.0
+    },
+    "action_valid": {
+      "total": 0,
+      "passed": 0,
+      "pass_rate": 0.0
+    },
+    "difficulty_valid": {
+      "total": 0,
+      "passed": 0,
+      "pass_rate": 0.0
+    },
+    "response_not_empty": {
+      "total": 20,
+      "passed": 20,
+      "pass_rate": 1.0
+    },
+    "response_length": {
+      "min": 1781,
+      "max": 4219,
+      "mean": 2718.0,
+      "median": 2749
+    }
+  },
+  "structured_aggregate": {
+    "schema_valid": {
+      "total": 20,
+      "passed": 20,
+      "pass_rate": 1.0
+    },
+    "has_action": {
+      "total": 20,
+      "passed": 20,
+      "pass_rate": 1.0
+    },
+    "has_strategy": {
+      "total": 20,
+      "passed": 20,
+      "pass_rate": 1.0
+    },
+    "has_response": {
+      "total": 20,
+      "passed": 20,
+      "pass_rate": 1.0
+    },
+    "has_diagnosis": {
+      "total": 20,
+      "passed": 20,
+      "pass_rate": 1.0
+    },
+    "has_understanding_check": {
+      "total": 20,
+      "passed": 20,
+      "pass_rate": 1.0
+    },
+    "has_memory": {
+      "total": 20,
+      "passed": 20,
+      "pass_rate": 1.0
+    },
+    "memory_structure_valid": {
+      "total": 13,
+      "passed": 13,
+      "pass_rate": 1.0
+    },
+    "action_valid": {
+      "total": 20,
+      "passed": 20,
+      "pass_rate": 1.0
+    },
+    "difficulty_valid": {
+      "total": 20,
+      "passed": 20,
+      "pass_rate": 1.0
+    },
+    "response_not_empty": {
+      "total": 20,
+      "passed": 20,
+      "pass_rate": 1.0
+    },
+    "response_length": {
+      "min": 941,
+      "max": 2021,
+      "mean": 1438.0,
+      "median": 1483
+    }
+  },
+  "overall_aggregate": {
+    "schema_valid": {
+      "total": 20,
+      "passed": 20,
+      "pass_rate": 1.0
+    },
+    "has_action": {
+      "total": 20,
+      "passed": 20,
+      "pass_rate": 1.0
+    },
+    "has_strategy": {
+      "total": 20,
+      "passed": 20,
+      "pass_rate": 1.0
+    },
+    "has_response": {
+      "total": 20,
+      "passed": 20,
+      "pass_rate": 1.0
+    },
+    "has_diagnosis": {
+      "total": 20,
+      "passed": 20,
+      "pass_rate": 1.0
+    },
+    "has_understanding_check": {
+      "total": 20,
+      "passed": 20,
+      "pass_rate": 1.0
+    },
+    "has_memory": {
+      "total": 20,
+      "passed": 20,
+      "pass_rate": 1.0
+    },
+    "memory_structure_valid": {
+      "total": 13,
+      "passed": 13,
+      "pass_rate": 1.0
+    },
+    "action_valid": {
+      "total": 20,
+      "passed": 20,
+      "pass_rate": 1.0
+    },
+    "difficulty_valid": {
+      "total": 20,
+      "passed": 20,
+      "pass_rate": 1.0
+    },
+    "response_not_empty": {
+      "total": 40,
+      "passed": 40,
+      "pass_rate": 1.0
+    },
+    "response_length": {
+      "min": 941,
+      "max": 4219,
+      "mean": 2078.0,
+      "median": 1879
+    }
+  }
+}
