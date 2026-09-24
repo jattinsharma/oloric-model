@@ -28,7 +28,7 @@ lora:
 training:
   # Effective batch size calculations
   per_device_train_batch_size: 1  # Micro batch size
-  gradient_accumulation_steps: 8  # Effective batch size = 8
+  gradient_accumulation_steps: 4  # Effective batch size = 4 (matches L4 smoke test; do NOT change)
   gradient_checkpointing: True
   
   # Memory optimizations
@@ -46,7 +46,7 @@ training:
   logging_steps: 5
   save_steps: 50
   eval_steps: 50
-  save_total_limit: 2
+  save_total_limit: 3
   
   # Precision
   fp16: False

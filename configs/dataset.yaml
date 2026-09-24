@@ -5,9 +5,9 @@ paths:
   raw_data: "./data/raw"
   generated_data: "./data/generated"
   processed_data: "./data/processed"
-  train_file: "./data/train.jsonl"
-  validation_file: "./data/validation.jsonl"
-  test_file: "./data/test.jsonl"
+  train_file: "./data/splits/train.jsonl"
+  validation_file: "./data/splits/validation.jsonl"
+  test_file: "./data/splits/test.jsonl"
 
 # Dataset categories (types of tutoring behavior)
 categories:

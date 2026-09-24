@@ -1,0 +1,19 @@
+{
+  "total_examples": 480,
+  "single_turn_count": 306,
+  "multi_turn_count": 174,
+  "avg_turns": 1.5791666666666666,
+  "subtype_counts": {
+    "useful single-turn": 306,
+    "strong Oloric trajectory": 127,
+    "weak multi-turn": 47
+  },
+  "category_counts": {
+    "strategy_switching": 15,
+    "misconception_detection": 13,
+    "prerequisite_detection": 14,
+    "understanding_confirmation": 17,
+    "memory_generation": 15
+  },
+  "memory_candidate_count": 179
+}

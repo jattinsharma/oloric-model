@@ -74,9 +74,9 @@ def prepare_datasets(train_examples: List[TrainingExample],
 def main():
     """Main training function."""
     parser = argparse.ArgumentParser(description="Train OLORIC with QLoRA")
-    parser.add_argument("--train-file", type=str, default="./data/train.jsonl",
+    parser.add_argument("--train-file", type=str, default="./data/splits/train.jsonl",
                         help="Path to training dataset")
-    parser.add_argument("--val-file", type=str, default="./data/validation.jsonl",
+    parser.add_argument("--val-file", type=str, default="./data/splits/validation.jsonl",
                         help="Path to validation dataset")
     parser.add_argument("--output-dir", type=str, default="./checkpoints",
                         help="Output directory for checkpoints")
@@ -88,9 +88,9 @@ def main():
                         help="Maximum number of training samples to use")
     parser.add_argument("--max-val-samples", type=int, default=None,
                         help="Maximum number of validation samples to use")
-    parser.add_argument("--logging-steps", type=int, default=10,
+    parser.add_argument("--logging-steps", type=int, default=5,
                         help="Log every N steps")
-    parser.add_argument("--save-steps", type=int, default=100,
+    parser.add_argument("--save-steps", type=int, default=50,
                         help="Save checkpoint every N steps")
     
     args = parser.parse_args()
@@ -136,14 +136,15 @@ def main():
         
         # Override config if specified
         if args.model_name:
-            # Would update the model config here
             print(f"Overriding model name to: {args.model_name}")
+            trainer.model_config.setdefault("base_model", {})["name"] = args.model_name
         
         # Override training args if specified
-        if args.logging_steps != 10:
+        if args.logging_steps is not None:
             trainer.training_config["logging_steps"] = args.logging_steps
-        if args.save_steps != 100:
+        if args.save_steps is not None:
             trainer.training_config["save_steps"] = args.save_steps
+            trainer.training_config["eval_steps"] = args.save_steps
         
     except Exception as e:
         print(f"Error initializing trainer: {e}")

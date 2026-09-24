@@ -89,6 +89,10 @@ data/generated*/**
 !data/generated/audit_stats.json
 !data/generated/dataset_metadata.json
 !data/generated*/.gitkeep
+# Deterministic train/val/test split files (reproducible from materialize_splits.py, seed=42)
+!data/splits/train.jsonl
+!data/splits/validation.jsonl
+!data/splits/test.jsonl
 
 # Backup, review, and temp files
 *.backup

@@ -6,40 +6,61 @@
   "sha256": "9DA9F5E9B45CA85F718B3E71FD8FB81881D46101D9815C7323411C30C7625921",
   "example_count": 480,
   "categories": {
-    "simple_explanation": 24,
-    "understanding_confirmation": 24,
+    "analogy": 24,
     "concrete_example": 24,
-    "memory_generation": 24,
     "context_retention": 24,
-    "partial_understanding": 24,
-    "document_grounded": 24,
     "diagnostic_questions": 24,
-    "socratic_questioning": 24,
-    "misconception_correction": 24,
-    "analogy_building": 24,
-    "prerequisite_check": 24,
-    "strategy_switching": 24,
-    "scaffolded_explanation": 24,
-    "multi_turn_progression": 24,
-    "difficulty_calibration": 24,
+    "document_grounded": 24,
+    "error_correction": 24,
     "follow_up_questions": 24,
-    "worked_example": 24,
-    "error_diagnosis": 24,
-    "knowledge_consolidation": 24
+    "hint_based_teaching": 24,
+    "memory_generation": 24,
+    "misconception_detection": 24,
+    "multi_turn_tutoring": 24,
+    "numerical_example": 24,
+    "partial_understanding": 24,
+    "practice_questions": 24,
+    "prerequisite_detection": 24,
+    "repeated_confusion": 24,
+    "simple_explanation": 24,
+    "simplification": 24,
+    "strategy_switching": 24,
+    "understanding_confirmation": 24
   },
+  "category_count": 20,
   "domains": {
-    "general_academic": 80,
-    "science": 80,
-    "nutrition_food_science": 80,
     "accountancy": 80,
+    "economics": 80,
+    "general_academic": 80,
     "mathematics": 80,
-    "economics": 80
+    "nutrition_food_science": 80,
+    "science": 80
+  },
+  "domain_count": 6,
+  "splits": {
+    "algorithm": "random.Random(42).shuffle(range(480))",
+    "seed": 42,
+    "train_ratio": 0.8,
+    "validation_ratio": 0.1,
+    "test_ratio": 0.1,
+    "train_count": 384,
+    "validation_count": 48,
+    "test_count": 48,
+    "split_files_dir": "data/splits/"
+  },
+  "model": {
+    "id": "Qwen/Qwen3-4B-Instruct-2507",
+    "revision": "cdbee75f17c01a7cc42f958dc650907174af0554"
   },
   "audit_date": "2026-09-24",
+  "freeze_date": "2026-09-25",
   "notes": [
     "This file is committed to Git and must not be regenerated.",
-    "The SHA-256 hash is the authoritative integrity check.",
+    "The SHA-256 hash is the authoritative integrity check (normalized LF line endings).",
     "Verified on Antigravity dev environment before push.",
-    "warmup_ratio in configs is read by training.py and converted to warmup_steps (Transformers 5.x compatibility)."
+    "warmup_ratio in configs is read by training.py and converted to warmup_steps (Transformers 5.x compatibility).",
+    "Category names in this file reflect the actual 'category' field values in enhanced_seed_data.jsonl.",
+    "The 20 categories in the dataset correspond exactly to VALID_CATEGORIES in src/oloric/schemas/dataset.py.",
+    "Model revision is the pinned HuggingFace commit SHA for Qwen/Qwen3-4B-Instruct-2507 as of 2026-09-24."
   ]
 }

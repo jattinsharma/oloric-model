@@ -149,12 +149,14 @@ class OloricTrainer:
         # steps so the warm-up behaviour is preserved semantically.
         _num_epochs = self.training_config.get("num_train_epochs", 3)
         _per_device_bs = self.training_config.get("per_device_train_batch_size", 1)
-        _grad_accum = self.training_config.get("gradient_accumulation_steps", 4)
+        # Gradient accumulation: qlora.yaml is the authoritative source (empirically tested at 4)
+        _grad_accum = (
+            self.qlora_config.get("training", {}).get("gradient_accumulation_steps")
+            or self.training_config.get("gradient_accumulation_steps", 4)
+        )
         _warmup_fraction = self.training_config.get("warmup_ratio", 0.03)
-        # Dataset size is unknown here; use a reasonable default of 480 examples
-        # (the audited Oloric dataset size).  The actual LR schedule will be
-        # recalculated by the scheduler, so being slightly off is acceptable.
-        _dataset_size = self.training_config.get("dataset_size", 480)
+        # Training dataset size: 384 examples (80% split of 480 audited examples).
+        _dataset_size = self.training_config.get("dataset_size", 384)
         _steps_per_epoch = max(1, _dataset_size // (_per_device_bs * _grad_accum))
         _total_steps = _steps_per_epoch * _num_epochs
         _warmup_steps = max(1, int(_total_steps * _warmup_fraction))
@@ -172,9 +174,9 @@ class OloricTrainer:
             max_grad_norm=self.training_config.get("max_grad_norm", 0.3),
             warmup_steps=_warmup_steps,  # replaces deprecated warmup_ratio
             lr_scheduler_type=self.training_config.get("lr_scheduler_type", "cosine"),
-            logging_steps=self.training_config.get("logging_steps", 10),
-            save_steps=self.training_config.get("save_steps", 100),
-            eval_steps=self.training_config.get("eval_steps", 100),
+            logging_steps=self.training_config.get("logging_steps", 5),
+            save_steps=self.training_config.get("save_steps", 50),
+            eval_steps=self.training_config.get("eval_steps", 50),
             save_total_limit=self.training_config.get("save_total_limit", 3),
             fp16=self.training_config.get("fp16", False),
             bf16=self.training_config.get("bf16", True),
