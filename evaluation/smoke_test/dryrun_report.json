@@ -1,0 +1,11 @@
+{
+  "dry_run": true,
+  "tests": [
+    "synthetic",
+    "real"
+  ],
+  "synthetic_examples": 5,
+  "data_file": "data/generated/enhanced_seed_data.jsonl",
+  "data_file_exists": true,
+  "timestamp": "2026-09-23T10:06:50.059169+00:00"
+}

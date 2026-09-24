@@ -1,0 +1,166 @@
+#!/usr/bin/env python3
+"""
+QLoRA training script for OLORIC.
+Implements the training pipeline using QLoRA for efficient fine-tuning.
+"""
+import os
+import sys
+import argparse
+import torch
+from typing import List, Dict, Any
+from oloric.src.oloric.training import OloricTrainer
+from oloric.src.oloric.data import data_manager
+from oloric.src.oloric.schemas.dataset import TrainingExample
+
+def load_dataset(file_path: str) -> List[TrainingExample]:
+    """Load dataset from JSONL file."""
+    examples = []
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Dataset file not found: {file_path}")
+    
+    with open(file_path, 'r') as f:
+        for line_num, line in enumerate(f, 1):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                data = json.loads(line)
+                example = TrainingExample(**data)
+                examples.append(example)
+            except json.JSONDecodeError as e:
+                print(f"Warning: Invalid JSON on line {line_num}: {e}")
+            except Exception as e:
+                print(f"Warning: Error parsing example on line {line_num}: {e}")
+    
+    return examples
+
+def prepare_datasets(train_examples: List[TrainingExample], 
+                    val_examples: List[TrainingExample] = None) -> Any:
+    """
+    Prepare datasets for training.
+    
+    Args:
+        train_examples: Training examples
+        val_examples: Validation examples (optional)
+        
+    Returns:
+        Prepared datasets
+    """
+    # In a real implementation, we would:
+    # 1. Convert examples to input/target text pairs
+    # 2. Tokenize them
+    # 3. Create PyTorch datasets
+    
+    # For this script, we'll return the examples directly
+    # The actual tokenization would happen in the trainer
+    print(f"Preparing {len(train_examples)} training examples")
+    if val_examples:
+        print(f"Preparing {len(val_examples)} validation examples")
+    
+    # Placeholder - in reality, this would return tokenized datasets
+    return train_examples, val_examples
+
+def main():
+    """Main training function."""
+    parser = argparse.ArgumentParser(description="Train OLORIC with QLoRA")
+    parser.add_argument("--train-file", type=str, default="./data/train.jsonl",
+                        help="Path to training dataset")
+    parser.add_argument("--val-file", type=str, default="./data/validation.jsonl",
+                        help="Path to validation dataset")
+    parser.add_argument("--output-dir", type=str, default="./checkpoints",
+                        help="Output directory for checkpoints")
+    parser.add_argument("--model-name", type=str, default=None,
+                        help="Base model name (overrides config)")
+    parser.add_argument("--resume-from", type=str, default=None,
+                        help="Path to checkpoint to resume from")
+    parser.add_argument("--max-train-samples", type=int, default=None,
+                        help="Maximum number of training samples to use")
+    parser.add_argument("--max-val-samples", type=int, default=None,
+                        help="Maximum number of validation samples to use")
+    parser.add_argument("--logging-steps", type=int, default=10,
+                        help="Log every N steps")
+    parser.add_argument("--save-steps", type=int, default=100,
+                        help="Save checkpoint every N steps")
+    
+    args = parser.parse_args()
+    
+    print("=" * 60)
+    print("OLORIC QLoRA Training")
+    print("=" * 60)
+    
+    # Load datasets
+    print("Loading datasets...")
+    try:
+        train_examples = load_dataset(args.train_file)
+        val_examples = load_dataset(args.val_file) if os.path.exists(args.val_file) else None
+    except Exception as e:
+        print(f"Error loading datasets: {e}")
+        return 1
+    
+    # Limit samples if specified
+    if args.max_train_samples and args.max_train_samples < len(train_examples):
+        train_examples = train_examples[:args.max_train_samples]
+        print(f"Limited training to {args.max_train_samples} samples")
+    
+    if args.max_val_samples and val_examples and args.max_val_samples < len(val_examples):
+        val_examples = val_examples[:args.max_val_samples]
+        print(f"Limited validation to {args.max_val_samples} samples")
+    
+    if len(train_examples) == 0:
+        print("Error: No training examples loaded")
+        return 1
+    
+    # Prepare datasets
+    print("Preparing datasets...")
+    try:
+        train_dataset, val_dataset = prepare_datasets(train_examples, val_examples)
+    except Exception as e:
+        print(f"Error preparing datasets: {e}")
+        return 1
+    
+    # Initialize trainer
+    print("Initializing trainer...")
+    try:
+        trainer = OloricTrainer()
+        
+        # Override config if specified
+        if args.model_name:
+            # Would update the model config here
+            print(f"Overriding model name to: {args.model_name}")
+        
+        # Override training args if specified
+        if args.logging_steps != 10:
+            trainer.training_config["logging_steps"] = args.logging_steps
+        if args.save_steps != 100:
+            trainer.training_config["save_steps"] = args.save_steps
+        
+    except Exception as e:
+        print(f"Error initializing trainer: {e}")
+        return 1
+    
+    # Start training
+    print("Starting training...")
+    try:
+        start_time = time.time()
+        trainer_obj = trainer.train(train_dataset, val_dataset)
+        end_time = time.time()
+        
+        training_time = end_time - start_time
+        print(f"Training completed in {training_time/3600:.2f} hours")
+        
+        # Save final model
+        final_output_dir = os.path.join(args.output_dir, "final_model")
+        trainer.save_model(final_output_dir)
+        print(f"Final model saved to: {final_output_dir}")
+        
+    except Exception as e:
+        print(f"Error during training: {e}")
+        return 1
+    
+    print("=" * 60)
+    print("Training completed successfully!")
+    print("=" * 60)
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())

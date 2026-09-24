@@ -1,0 +1,11 @@
+{
+  "dry_run": true,
+  "model_id": "Qwen/Qwen3-4B-Instruct-2507",
+  "benchmark_hash": "27edc2bd7ffa0cc530e7bdf6d44ef14099363ab0ebe93e323b7aeae5524e38ad",
+  "benchmark_items": 20,
+  "modes": [
+    "general",
+    "structured"
+  ],
+  "timestamp": "2026-09-23T10:06:06.365377+00:00"
+}

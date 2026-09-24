@@ -1,0 +1,101 @@
+# Byte-compiled / optimized / DLL files
+__pycompile__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+#  Usually these files are written by a python script from a temporary
+#  directory before pyinstaller.exe@7.0.0, so we do not want to include them.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Model weights and checkpoints
+*.pt
+*.pth
+*.ckpt
+checkpoints/
+models/
+
+# Data
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/generated*/*
+!data/generated*/.gitkeep
+
+# Backup, review, and temp files
+*.backup
+*.bak
+quality_review_*.txt
+
+# Logs
+*.log
+
+# Hugging Face
+.huggingface/
+
+# Lightning
+lightning_logs/
+
+# EOF

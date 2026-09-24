@@ -1,0 +1,78 @@
+# QLoRA Configuration for OLORIC
+# Optimized for NVIDIA L4 24 GB GPU
+
+# Quantization settings (4-bit)
+quantization:
+  load_in_4bit: True
+  bnb_4bit_quant_type: "nf4"
+  bnb_4bit_use_double_quant: True
+  bnb_4bit_compute_dtype: "bfloat16"
+
+# LoRA settings
+lora:
+  r: 16
+  lora_alpha: 32
+  target_modules:
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+  lora_dropout: 0.05
+  bias: "none"
+  task_type: "CAUSAL_LM"
+
+# Training optimization for L4 24GB
+training:
+  # Effective batch size calculations
+  per_device_train_batch_size: 1  # Micro batch size
+  gradient_accumulation_steps: 8  # Effective batch size = 8
+  gradient_checkpointing: True
+  
+  # Memory optimizations
+  optim: "paged_adamw_8bit"
+  learning_rate: 2e-4
+  weight_decay: 0.01
+  max_grad_norm: 0.3
+  warmup_ratio: 0.03
+  lr_scheduler_type: "cosine"
+  
+  # Training duration
+  num_train_epochs: 3
+  
+  # Logging and saving
+  logging_steps: 5
+  save_steps: 50
+  eval_steps: 50
+  save_total_limit: 2
+  
+  # Precision
+  fp16: False
+  bf16: True
+  tf32: True
+  
+  # Data loading
+  dataloader_pin_memory: False
+  dataloader_num_workers: 2
+  remove_unused_columns: False
+
+# Memory usage estimates (approximate)
+memory_estimates:
+  base_model_4bit: "~4.5 GB"  # Qwen3-4B in 4-bit
+  lora_adapters: "~0.5 GB"    # LoRA adapters
+  optimizer_states: "~2.0 GB" # 8-bit optimizer states
+  activations: "~6.0 GB"      # Activations with gradient checkpointing
+  total: "~13.0 GB"           # Leaves room for batch processing
+  
+# Sequence length settings
+sequence:
+  max_length: 2048
+  # Conservative for L4 - can be increased if memory allows
+  
+# Validation
+validation:
+  # Ensure we don't exceed L4 24GB limit
+  max_safe_batch_size: 4  # Effective batch size with gradient accumulation
+  recommended_batch_size: 1  # Start with this and increase if stable

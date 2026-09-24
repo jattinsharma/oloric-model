@@ -1,0 +1,76 @@
+# Dataset Configuration for OLORIC
+
+# Dataset paths
+paths:
+  raw_data: "./data/raw"
+  generated_data: "./data/generated"
+  processed_data: "./data/processed"
+  train_file: "./data/train.jsonl"
+  validation_file: "./data/validation.jsonl"
+  test_file: "./data/test.jsonl"
+
+# Dataset categories (types of tutoring behavior)
+categories:
+  - simple_explanation
+  - simplification
+  - analogy
+  - concrete_example
+  - numerical_example
+  - prerequisite_detection
+  - misconception_detection
+  - follow_up_questions
+  - multi_turn_tutoring
+  - repeated_confusion
+  - strategy_switching
+  - diagnostic_questions
+  - hint_based_teaching
+  - practice_questions
+  - error_correction
+  - partial_understanding
+  - understanding_confirmation
+  - memory_generation
+  - document_grounded
+  - context_retention
+
+# Academic domains for diversity
+domains:
+  - economics
+  - accountancy
+  - mathematics
+  - science
+  - nutrition_food_science
+  - general_academic
+
+# Dataset generation settings
+generation:
+  seed_examples_target: 400  # 300-500 high-quality seed examples
+  validation_examples_target: 100
+  test_examples_target: 100
+  max_conversation_length: 10  # Maximum turns in a conversation
+  min_examples_per_category: 15  # Minimum examples per category
+  
+# Data validation settings
+validation:
+  check_required_fields: True
+  check_json_validity: True
+  check_no_empty_targets: True
+  check_valid_enums: True
+  check_conversation_order: True
+  check_no_duplicates: True
+  check_no_contradictory_schema: True
+  
+# Preprocessing settings
+preprocessing:
+  # Conversion from structured examples to model-specific format
+  # Will be implemented in formatting.py
+  template_format: "chatml"  # or "alpaca", "llama2", etc. depending on base model
+  max_sequence_length: 2048
+  truncation_side: "right"
+  
+# Train/validation/test split
+split:
+  train_ratio: 0.8
+  validation_ratio: 0.1
+  test_ratio: 0.1
+  shuffle: True
+  seed: 42

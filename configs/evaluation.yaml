@@ -1,0 +1,79 @@
+# Evaluation Configuration for OLORIC
+
+# Benchmark settings
+benchmark:
+  path: "./evaluation/benchmark.jsonl"
+  size_target: 100  # Minimum scenarios for evaluation
+  domains:
+    - economics
+    - mathematics
+    - science
+    - general_academic
+  difficulty_levels:
+    - beginner
+    - intermediate
+    - advanced
+
+# Evaluation dimensions (scored 0-4)
+dimensions:
+  factual_correctness:
+    description: "Accuracy of factual information provided"
+    weight: 0.15
+  document_grounding:
+    description: "How well the response uses and references the provided document context"
+    weight: 0.10
+  simplicity:
+    description: "Clarity and simplicity of explanation (avoiding unnecessary jargon)"
+    weight: 0.10
+  teaching_strategy_selection:
+    description: "Appropriateness of chosen teaching strategy for the confusion type"
+    weight: 0.15
+  strategy_switching:
+    description: "Ability to change strategy when initial explanation fails"
+    weight: 0.10
+  misconception_detection:
+    description: "Accuracy in identifying learner misconceptions"
+    weight: 0.10
+  prerequisite_detection:
+    description: "Accuracy in identifying missing prerequisites"
+    weight: 0.10
+  context_retention:
+    description: "Ability to maintain and use information from earlier in conversation"
+    weight: 0.05
+  diagnostic_question_quality:
+    description: "Quality of questions used to diagnose understanding"
+    weight: 0.05
+  understanding_check_quality:
+    description: "Quality of questions used to check understanding"
+    weight: 0.05
+  memory_candidate_quality:
+    description: "Quality and relevance of generated memory candidates"
+    weight: 0.05
+
+# Hallucination resistance
+hallucination_checks:
+  enabled: True
+  check_factual_consistency: True
+  check_document_grounding: True
+  check_contradictions: True
+
+# Generation settings for evaluation
+generation:
+  max_new_tokens: 512
+  temperature: 0.7  # Balanced creativity and consistency
+  top_p: 0.9
+  do_sample: True
+  # For reproducibility in evaluation, we might use lower temperature
+  eval_temperature: 0.3
+
+# Reporting
+reporting:
+  generate_per_dimension_scores: True
+  generate_confusion_matrix: True
+  save_detailed_examples: True
+  output_directory: "./evaluation/reports"
+  
+# Baseline comparison
+baseline:
+  compare_with_base_model: True
+  evaluation_scenarios: 50  # Number of scenarios to run baseline vs Oloric comparison
