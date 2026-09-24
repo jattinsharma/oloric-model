@@ -45,7 +45,7 @@ class Memory(BaseModel):
 
 class OloricModelOutput(BaseModel):
     """Output model for OLORIC."""
-    task: str = Field(..., description="Task performed (e.g., resolve_confusion)")
+    task: Optional[str] = Field(None, description="Task performed (optional)")
     action: str = Field(..., description="Action taken (e.g., explain, simplify, analogy)")
     strategy: str = Field(..., description="Strategy used (e.g., simple_explanation)")
     difficulty: str = Field(..., description="Difficulty level (beginner, intermediate, advanced)")

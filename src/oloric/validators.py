@@ -4,7 +4,7 @@ Validators for OLORIC dataset and schemas.
 import json
 import re
 from typing import List, Dict, Any, Optional, Tuple
-from .schemas.dataset import TrainingExample
+from .schemas.dataset import TrainingExample, VALID_CATEGORIES, VALID_DOMAINS
 from .schemas.model_input import OloricModelInput
 from .schemas.model_output import OloricModelOutput
 import logging
@@ -15,10 +15,28 @@ logger = logging.getLogger(__name__)
 class DatasetValidator:
     """Validates OLORIC training dataset."""
 
+    @staticmethod
+    def get_required_fields() -> List[str]:
+        """Get required fields from the TrainingExample schema."""
+        if hasattr(TrainingExample, "model_fields"):
+            # Pydantic v2
+            return [
+                name for name, field in TrainingExample.model_fields.items()
+                if field.is_required()
+            ]
+        elif hasattr(TrainingExample, "__fields__"):
+            # Pydantic v1
+            return [
+                name for name, field in TrainingExample.__fields__.items()
+                if getattr(field, "required", False)
+            ]
+        return ["id", "category", "domain", "instruction", "context", "target"]
+
     def __init__(self):
         """Initialize validator."""
         self.validation_errors = []
         self.validation_warnings = []
+        self.required_fields = self.get_required_fields()
 
     def validate_jsonl_file(self, file_path: str) -> Tuple[bool, List[str], List[str]]:
         """
@@ -87,8 +105,11 @@ class DatasetValidator:
         errors = []
         warnings = []
 
-        # Validate required fields
-        errors.extend([f"Line {line_num}: Missing required field '{field}'" for field in required_fields if field not in data])
+        # Validate required fields defined by the TrainingExample schema
+        required_fields = getattr(self, "required_fields", None) or self.get_required_fields()
+        for field in required_fields:
+            if field not in data:
+                errors.append(f"Line {line_num}: Missing required field '{field}'")
 
         if errors:
             return False, errors, warnings
@@ -99,24 +120,11 @@ class DatasetValidator:
             errors.append(f"Line {line_num}: ID must be a non-empty string")
 
         # Validate category
-        valid_categories = [
-            "simple_explanation", "simplification", "analogy", "concrete_example",
-            "numerical_example", "prerequisite_detection", "misconception_detection",
-            "follow_up_questions", "multi_turn_tutoring", "repeated_confusion",
-            "strategy_switching", "diagnostic_questions", "hint_based_teaching",
-            "practice_questions", "error_correction", "partial_understanding",
-            "understanding_confirmation", "memory_generation", "document_grounded",
-            "context_retention"
-        ]
-        if data["category"] not in valid_categories:
+        if data["category"] not in VALID_CATEGORIES:
             errors.append(f"Line {line_num}: Invalid category '{data['category']}'")
 
         # Validate domain
-        valid_domains = [
-            "economics", "accountancy", "mathematics", "science",
-            "nutrition_food_science", "general_academic"
-        ]
-        if data["domain"] not in valid_domains:
+        if data["domain"] not in VALID_DOMAINS:
             errors.append(f"Line {line_num}: Invalid domain '{data['domain']}'")
 
         # Validate context

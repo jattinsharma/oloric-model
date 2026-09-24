@@ -97,7 +97,7 @@ def test_valid_jsonl():
         # Check results
         assert is_valid, f"Valid file should pass validation. Errors: {errors}"
         assert len(errors) == 0, f"Valid file should have no errors. Got: {errors}"
-        print("✓ Valid JSONL file test passed")
+        print("[PASS] Valid JSONL file test passed")
 
     finally:
         # Clean up
@@ -182,7 +182,7 @@ def test_invalid_jsonl():
         assert not is_valid, "Invalid file should fail validation"
         assert len(errors) > 0, "Invalid file should have errors"
         assert any("domain" in error.lower() for error in errors), "Should have error about missing domain"
-        print("✓ Invalid JSONL file test passed")
+        print("[PASS] Invalid JSONL file test passed")
 
     finally:
         # Clean up
@@ -271,7 +271,7 @@ def test_duplicate_ids():
         assert not is_valid, "File with duplicate IDs should fail validation"
         assert len(errors) > 0, "File with duplicate IDs should have errors"
         assert any("duplicate" in error.lower() for error in errors), "Should have error about duplicate ID"
-        print("✓ Duplicate IDs test passed")
+        print("[PASS] Duplicate IDs test passed")
 
     finally:
         # Clean up
@@ -282,4 +282,4 @@ if __name__ == "__main__":
     test_valid_jsonl()
     test_invalid_jsonl()
     test_duplicate_ids()
-    print("\nAll tests passed! ✓")
+    print("\nAll tests passed! [PASS]")

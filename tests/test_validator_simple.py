@@ -19,33 +19,12 @@ sys.modules['oloric.inference'] = MagicMock()
 # Add the src directory to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-# Mock the schemas module
-sys.modules['oloric.schemas'] = MagicMock()
-sys.modules['oloric.schemas.dataset'] = MagicMock()
-sys.modules['oloric.schemas.model_input'] = MagicMock()
-sys.modules['oloric.schemas.model_output'] = MagicMock()
-
-# Now we can import the validators module directly
-import importlib.util
-spec = importlib.util.spec_from_file_location(
-    "validators",
-    os.path.join(os.path.dirname(__file__), '..', 'src', 'oloric', 'validators.py')
-)
-validators_module = importlib.util.module_from_spec(spec)
-
-# Mock the relative imports
-with patch.dict('sys.modules', {
-    'oloric.schemas.dataset': MagicMock(),
-    'oloric.schemas.model_input': MagicMock(),
-    'oloric.schemas.model_output': MagicMock()
-}):
-    spec.loader.exec_module(validators_module)
-    validator = validators_module.validator
+from oloric.validators import validator
 
 def test_validator_import():
     """Test that we can import the validator."""
     assert validator is not None
-    print("✓ Validator imported successfully")
+    print("[PASS] Validator imported successfully")
 
 def test_validate_jsonl_file_not_found():
     """Test validation of non-existent file."""
@@ -53,7 +32,7 @@ def test_validate_jsonl_file_not_found():
     assert not is_valid
     assert len(errors) > 0
     assert "File not found" in errors[0]
-    print("✓ File not found test passed")
+    print("[PASS] File not found test passed")
 
 def test_validate_jsonl_file_empty():
     """Test validation of empty file."""
@@ -64,7 +43,7 @@ def test_validate_jsonl_file_empty():
         is_valid, errors, warnings = validator.validate_jsonl_file(temp_file)
         assert is_valid  # Empty file is valid (no lines to validate)
         assert len(errors) == 0
-        print("✓ Empty file test passed")
+        print("[PASS] Empty file test passed")
     finally:
         os.unlink(temp_file)
 
