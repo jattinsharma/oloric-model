@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Audited 480-example dataset for Oloric v0.1 QLoRA fine-tuning. This is the authoritative training dataset for the first Oloric training run.",
   "file": "enhanced_seed_data.jsonl",
-  "sha256": "67F755BE6643FEAD8372D95FDAB4560A14F42360CDB8D0DE2FE89E2FC9797527",
+  "sha256": "9DA9F5E9B45CA85F718B3E71FD8FB81881D46101D9815C7323411C30C7625921",
   "example_count": 480,
   "categories": {
     "simple_explanation": 24,
