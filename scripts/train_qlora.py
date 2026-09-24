@@ -5,12 +5,23 @@ Implements the training pipeline using QLoRA for efficient fine-tuning.
 """
 import os
 import sys
+import json
+import time
 import argparse
-import torch
 from typing import List, Dict, Any
-from oloric.src.oloric.training import OloricTrainer
-from oloric.src.oloric.data import data_manager
-from oloric.src.oloric.schemas.dataset import TrainingExample
+
+# Ensure src directory is on sys.path
+_repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_src_dir = os.path.join(_repo_root, "src")
+if _src_dir not in sys.path:
+    sys.path.insert(0, _src_dir)
+if _repo_root not in sys.path:
+    sys.path.insert(0, _repo_root)
+
+import torch
+from oloric.training import OloricTrainer
+from oloric.data import data_manager
+from oloric.schemas.dataset import TrainingExample
 
 def load_dataset(file_path: str) -> List[TrainingExample]:
     """Load dataset from JSONL file."""

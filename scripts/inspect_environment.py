@@ -7,7 +7,7 @@ import os
 import sys
 import platform
 import subprocess
-import pkg_resources
+import importlib.metadata
 from typing import Dict, Any
 import torch
 
@@ -16,12 +16,13 @@ def check_python_version() -> Dict[str, Any]:
     version = sys.version_info
     return {
         "version": f"{version.major}.{version.minor}.{version.micro}",
-        "meets_requirement": version.major == 3 and version.minor >= 11,
-        "requirement": "Python 3.11+"
+        "meets_requirement": version.major == 3 and version.minor >= 10,
+        "requirement": "Python 3.10+"
     }
 
 def check_gpu_availability() -> Dict[str, Any]:
-    """Check GPU availability = {
+    """Check GPU availability."""
+    availability = {
         "cuda_available": torch.cuda.is_available(),
         "gpu_count": torch.cuda.device_count() if torch.cuda.is_available() else 0,
         "gpus": []
@@ -29,10 +30,11 @@ def check_gpu_availability() -> Dict[str, Any]:
     if torch.cuda.is_available():
         for i in range(torch.cuda.device_count()):
             gpu_props = torch.cuda.get_device_properties(i)
+            total_mem = getattr(gpu_props, "total_memory", getattr(gpu_props, "total_mem", 0))
             availability["gpus"].append({
                 "id": i,
                 "name": gpu_props.name,
-                "total_memory_gb": round(gpu_props.total_memory / (1024**3), 2),
+                "total_memory_gb": round(total_mem / (1024**3), 2),
                 "major": gpu_props.major,
                 "minor": gpu_props.minor
             })
@@ -41,31 +43,32 @@ def check_gpu_availability() -> Dict[str, Any]:
 def check_dependencies() -> Dict[str, Any]:
     """Check key dependencies."""
     required_packages = {
-        "torch": "2.0.0",
-        "transformers": "4.30.0",
-        "peft": "0.5.0",
+        "torch": "2.1.0",
+        "transformers": "4.40.0",
+        "peft": "0.10.0",
+        "accelerate": "0.28.0",
         "bitsandbytes": "0.41.0",
-        "datasets": "2.10.0",
+        "datasets": "2.18.0",
         "pydantic": "2.0.0",
         "yaml": "6.0"
     }
     
+    # Mapping for packages whose distribution name differs from import name
+    dist_names = {
+        "yaml": "PyYAML",
+    }
+    
     results = {}
     for package, min_version in required_packages.items():
+        dist_name = dist_names.get(package, package)
         try:
-            if package == "yaml":
-                # PyYAML is imported as yaml
-                installed_version = pkg_resources.get_distribution("PyYAML").version
-            else:
-                installed_version = pkg_resources.get_distribution(package).version
-            
-            # Simple version check (doesn't handle complex version specs)
+            installed_version = importlib.metadata.version(dist_name)
             results[package] = {
                 "installed": installed_version,
                 "required": min_version,
-                "status": "installed"  # Simplified
+                "status": "installed"
             }
-        except pkg_resources.DistributionNotFound:
+        except importlib.metadata.PackageNotFoundError:
             results[package] = {
                 "installed": None,
                 "required": min_version,
@@ -83,7 +86,7 @@ def check_dependencies() -> Dict[str, Any]:
 def check_disk_space() -> Dict[str, Any]:
     """Check available disk space."""
     import shutil
-    total, used, free = shutil.disk_usage("/")
+    total, used, free = shutil.disk_usage(os.getcwd())
     return {
         "total_gb": round(total / (1024**3), 2),
         "used_gb": round(used / (1024**3), 2),
@@ -102,12 +105,12 @@ def main():
     py_info = check_python_version()
     print(f"   Version: {py_info['version']}")
     print(f"   Requirement: {py_info['requirement']}")
-    print(f"   Status: {'✓ PASS' if py_info['meets_requirement'] else '✗ FAIL'}")
+    print(f"   Status: {'[PASS]' if py_info['meets_requirement'] else '[FAIL]'}")
     
     # GPU availability
     print("\n2. GPU Availability:")
     gpu_info = check_gpu_availability()
-    print(f"   CUDA Available: {'✓ YES' if gpu_info['cuda_available'] else '✗ NO'}")
+    print(f"   CUDA Available: {'[YES]' if gpu_info['cuda_available'] else '[NO]'}")
     print(f"   GPU Count: {gpu_info['gpu_count']}")
     for gpu in gpu_info["gpus"]:
         print(f"   GPU {gpu['id']}: {gpu['name']} ({gpu['total_memory_gb']} GB)")
@@ -116,7 +119,7 @@ def main():
     print("\n3. Dependencies:")
     deps = check_dependencies()
     for package, info in deps.items():
-        status_symbol = "✓" if info["status"] == "installed" else "✗"
+        status_symbol = "[OK]" if info["status"] == "installed" else "[MISSING]"
         print(f"   {status_symbol} {package}: {info['installed']} (required: {info['required']})")
     
     # Disk space
@@ -143,11 +146,11 @@ def main():
     ready &= all(info["status"] == "installed" for info in deps.values())
     ready &= disk_info["free_gb"] > 10  # At least 10 GB free
     
-    print(f"System Ready for OLORIC: {'✓ YES' if ready else '✗ NO'}")
+    print(f"System Ready for OLORIC: {'[YES]' if ready else '[NO]'}")
     if not ready:
         print("\nIssues to address:")
         if not py_info["meets_requirement"]:
-            print("  - Python version does not meet requirement (3.11+)")
+            print("  - Python version does not meet requirement (3.10+)")
         if not gpu_info["cuda_available"]:
             print("  - No CUDA-capable GPU detected")
         if gpu_info["gpu_count"] == 0:

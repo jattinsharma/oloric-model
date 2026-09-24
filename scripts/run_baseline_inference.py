@@ -245,7 +245,9 @@ def run_inference(benchmark_path: str, output_dir: str, model_name: str, modes: 
         return 1
 
     gpu_name = torch.cuda.get_device_name(0)
-    total_vram = torch.cuda.get_device_properties(0).total_mem / (1024 ** 3)
+    props = torch.cuda.get_device_properties(0)
+    total_mem_bytes = getattr(props, "total_memory", getattr(props, "total_mem", 0))
+    total_vram = total_mem_bytes / (1024 ** 3)
     print(f"GPU: {gpu_name}")
     print(f"Total VRAM: {total_vram:.2f} GB")
 

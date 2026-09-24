@@ -6,10 +6,20 @@ Evaluates the trained model on benchmark datasets.
 import os
 import sys
 import json
+import time
 import argparse
 from typing import List, Dict, Any
-from src.oloric.evaluation import OloricEvaluator
-from src.oloric.inference import OloricInference
+
+# Ensure src directory is on sys.path
+_repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_src_dir = os.path.join(_repo_root, "src")
+if _src_dir not in sys.path:
+    sys.path.insert(0, _src_dir)
+if _repo_root not in sys.path:
+    sys.path.insert(0, _repo_root)
+
+from oloric.evaluation import OloricEvaluator
+from oloric.inference import OloricInference
 
 def main():
     """Main evaluation function."""

@@ -38,9 +38,10 @@ def get_hardware_info(device: int = 0) -> Dict[str, Any]:
     """Get hardware information."""
     import torch
     props = torch.cuda.get_device_properties(device)
+    total_mem = getattr(props, "total_memory", getattr(props, "total_mem", 0))
     return {
         "gpu_name": torch.cuda.get_device_name(device),
-        "total_vram_gb": round(props.total_mem / (1024 ** 3), 2),
+        "total_vram_gb": round(total_mem / (1024 ** 3), 2),
         "cuda_version": torch.version.cuda or "N/A",
         "torch_version": torch.__version__,
         "gpu_count": torch.cuda.device_count(),

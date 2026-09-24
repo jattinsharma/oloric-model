@@ -8,7 +8,16 @@ import sys
 import json
 import argparse
 from pathlib import Path
-from src.oloric.validators import DatasetValidator
+
+# Ensure src directory is on sys.path
+_repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_src_dir = os.path.join(_repo_root, "src")
+if _src_dir not in sys.path:
+    sys.path.insert(0, _src_dir)
+if _repo_root not in sys.path:
+    sys.path.insert(0, _repo_root)
+
+from oloric.validators import DatasetValidator
 
 def validate_dataset_file(file_path: str) -> bool:
     """

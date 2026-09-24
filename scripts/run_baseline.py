@@ -8,12 +8,21 @@ import sys
 import json
 import argparse
 from typing import List, Dict, Any
-from oloric.src.oloric.inference import OloricInference
-from oloric.src.oloric.schemas.model_input import OloricModelInput
+
+# Ensure src directory is on sys.path
+_repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_src_dir = os.path.join(_repo_root, "src")
+if _src_dir not in sys.path:
+    sys.path.insert(0, _src_dir)
+if _repo_root not in sys.path:
+    sys.path.insert(0, _repo_root)
+
+from oloric.inference import OloricInference
+from oloric.schemas.model_input import OloricModelInput
 
 def create_sample_input() -> OloricModelInput:
     """Create a sample input for testing."""
-    from oloric.src.oloric.schemas.model_input import DocumentContext, LearnerState, ConversationTurn
+    from oloric.schemas.model_input import DocumentContext, LearnerState, ConversationTurn
     
     document_context = DocumentContext(
         document_id="econ101_chapter3",
