@@ -49,9 +49,12 @@ class OloricInference:
         if self.model_path:
             logger.info(f"Loading adapter from: {self.model_path}")
 
-        # Setup quantization config if using 4-bit
+        cuda_available = torch.cuda.is_available()
+        device_map = "auto" if cuda_available else "cpu"
+
+        # Setup quantization config if using 4-bit on CUDA
         quantization_config = None
-        if self.qlora_config.get("quantization", {}).get("load_in_4bit", False):
+        if cuda_available and self.qlora_config.get("quantization", {}).get("load_in_4bit", False):
             quant_config = self.qlora_config["quantization"]
             quantization_config = BitsAndBytesConfig(
                 load_in_4bit=quant_config.get("load_in_4bit", True),
@@ -63,7 +66,7 @@ class OloricInference:
         # Load model
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name,
-            device_map="cpu",
+            device_map=device_map,
             trust_remote_code=True,
             revision=self.model_config.get("base_model", {}).get("revision", "main"),
             quantization_config=quantization_config
@@ -114,29 +117,35 @@ class OloricInference:
         # Format input
         input_text = self.formatter.format_input(model_input)
 
-        # Tokenize
+        # Tokenize and ensure on model device
+        device = self.model.device
         inputs = self.tokenizer(
             input_text,
             return_tensors="pt",
             truncation=True,
             max_length=self.model_config.get("base_model", {}).get("max_length", 2048)
-        ).to(self.model.device)
+        ).to(device)
 
-        # Generate
-        with torch.no_grad():
+        # Generate using torch.inference_mode()
+        with torch.inference_mode():
             outputs = self.model.generate(
                 **inputs,
                 generation_config=self.generation_config
             )
 
         # Decode
+        input_len = inputs.input_ids.shape[1]
         generated_text = self.tokenizer.decode(
-            outputs[0][inputs.input_ids.shape[1]:],
+            outputs[0][input_len:],
             skip_special_tokens=True
         )
 
         # Parse output
-        model_output = self.formatter.parse_output(generated_text)
+        try:
+            model_output = self.formatter.parse_output(generated_text)
+        except Exception as e:
+            e.raw_response = generated_text
+            raise e
 
         return model_output
 
@@ -158,9 +167,14 @@ class _LazyInferenceEngine:
     def __init__(self):
         self._engine = None
 
+    def set_engine(self, engine: OloricInference) -> None:
+        """Explicitly set the underlying inference engine to avoid reloading."""
+        self._engine = engine
+
     def __getattr__(self, name):
         if self._engine is None:
             self._engine = OloricInference()
         return getattr(self._engine, name)
+
 
 inference_engine = _LazyInferenceEngine()

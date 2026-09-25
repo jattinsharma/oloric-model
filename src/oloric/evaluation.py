@@ -33,11 +33,12 @@ class EvaluationResult:
 class OloricEvaluator:
     """Handles evaluation of OLORIC model."""
     
-    def __init__(self):
+    def __init__(self, inference_engine: Optional[Any] = None):
         """Initialize OLORIC evaluator."""
         self.eval_config = config.get_evaluation_config()
         self.dimensions = self.eval_config.get("dimensions", {})
         self.benchmark_path = self.eval_config.get("benchmark", {}).get("path", "./evaluation/benchmark.jsonl")
+        self.inference_engine = inference_engine
         
     def load_benchmark(self) -> List[Dict[str, Any]]:
         """
@@ -47,7 +48,7 @@ class OloricEvaluator:
             List of evaluation examples
         """
         try:
-            with open(self.benchmark_path, 'r') as f:
+            with open(self.benchmark_path, 'r', encoding='utf-8') as f:
                 examples = []
                 for line in f:
                     line = line.strip()
@@ -89,8 +90,10 @@ class OloricEvaluator:
         schema_valid = True
         validation_error_msg: Optional[str] = None
 
+        engine = self.inference_engine if self.inference_engine is not None else inference_engine
+
         try:
-            model_output = inference_engine.generate_response(context)
+            model_output = engine.generate_response(context)
         except ValidationError as ve:
             schema_valid = False
             validation_error_msg = str(ve)

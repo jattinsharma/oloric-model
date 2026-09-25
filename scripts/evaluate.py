@@ -24,7 +24,7 @@ from oloric.inference import OloricInference
 def main():
     """Main evaluation function."""
     parser = argparse.ArgumentParser(description="Evaluate OLORIC model")
-    parser.add_argument("--model-path", type=str, default=None,
+    parser.add_argument("--model", "--model-path", dest="model_path", type=str, default=None,
                         help="Path to fine-tuned model (uses base model if not specified)")
     parser.add_argument("--benchmark-file", type=str, default="./evaluation/benchmark.jsonl",
                         help="Path to benchmark dataset")
@@ -59,7 +59,7 @@ def main():
     # Initialize evaluator
     print("Initializing evaluator...")
     try:
-        evaluator = OloricEvaluator()
+        evaluator = OloricEvaluator(inference_engine=inference_engine)
         # Override benchmark path if specified
         if args.benchmark_file:
             evaluator.benchmark_path = args.benchmark_file
