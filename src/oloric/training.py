@@ -21,6 +21,192 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def parse_numeric_param(
+    field_name: str,
+    val: Any,
+    target_type: type,
+    min_val: Optional[float] = None,
+    max_val: Optional[float] = None
+) -> Any:
+    """
+    Validate and convert numeric parameter strictly.
+    Fails with clear descriptive error on invalid strings or mismatched types.
+    """
+    if isinstance(val, bool):
+        raise TypeError(f"Invalid boolean value for numeric field '{field_name}': {val!r}")
+
+    if target_type is float:
+        if isinstance(val, (int, float)):
+            f_val = float(val)
+        elif isinstance(val, str):
+            val_str = val.strip()
+            try:
+                f_val = float(val_str)
+            except ValueError:
+                raise ValueError(
+                    f"Invalid float value for '{field_name}': '{val}'. Expected a valid numeric float."
+                )
+        else:
+            raise TypeError(
+                f"Invalid type for '{field_name}': {type(val).__name__} (value: {val!r}). Expected float or int."
+            )
+
+        if min_val is not None and f_val < min_val:
+            raise ValueError(f"Value for '{field_name}' ({f_val}) must be >= {min_val}")
+        if max_val is not None and f_val > max_val:
+            raise ValueError(f"Value for '{field_name}' ({f_val}) must be <= {max_val}")
+        return f_val
+
+    elif target_type is int:
+        if isinstance(val, int):
+            i_val = val
+        elif isinstance(val, float):
+            if val.is_integer():
+                i_val = int(val)
+            else:
+                raise ValueError(f"Invalid non-integer float for '{field_name}': {val}. Expected an integer.")
+        elif isinstance(val, str):
+            val_str = val.strip()
+            try:
+                f = float(val_str)
+                if f.is_integer():
+                    i_val = int(f)
+                else:
+                    raise ValueError(f"Invalid non-integer string for '{field_name}': '{val}'. Expected an integer.")
+            except ValueError:
+                raise ValueError(
+                    f"Invalid integer value for '{field_name}': '{val}'. Expected a valid integer."
+                )
+        else:
+            raise TypeError(
+                f"Invalid type for '{field_name}': {type(val).__name__} (value: {val!r}). Expected int."
+            )
+
+        if min_val is not None and i_val < min_val:
+            raise ValueError(f"Value for '{field_name}' ({i_val}) must be >= {min_val}")
+        if max_val is not None and i_val > max_val:
+            raise ValueError(f"Value for '{field_name}' ({i_val}) must be <= {max_val}")
+        return i_val
+
+    raise ValueError(f"Unsupported target_type: {target_type}")
+
+
+def validate_training_parameters(
+    training_config: Dict[str, Any],
+    qlora_config: Optional[Dict[str, Any]] = None,
+    base_model_config: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
+    """
+    Strictly validate and type-cast all training arguments before TrainingArguments is created.
+    Returns a dictionary of strictly typed parameters.
+    """
+    qlora_cfg = qlora_config or {}
+    bm_cfg = base_model_config or {}
+    q_training = qlora_cfg.get("training", {})
+
+    # Gradient accumulation: training_config takes priority, then qlora.yaml, default 4
+    ga_raw = training_config.get("gradient_accumulation_steps", q_training.get("gradient_accumulation_steps", 4))
+    gradient_accumulation_steps = parse_numeric_param("gradient_accumulation_steps", ga_raw, int, min_val=1)
+
+    # Learning rate: training_config takes priority, then qlora.yaml (authoritative: 2.0e-4)
+    lr_raw = training_config.get("learning_rate", q_training.get("learning_rate", 2.0e-4))
+    learning_rate = parse_numeric_param("learning_rate", lr_raw, float, min_val=1e-8, max_val=1.0)
+
+    # Weight decay
+    wd_raw = training_config.get("weight_decay", q_training.get("weight_decay", 0.01))
+    weight_decay = parse_numeric_param("weight_decay", wd_raw, float, min_val=0.0)
+
+    # Max grad norm
+    mgn_raw = training_config.get("max_grad_norm", q_training.get("max_grad_norm", 0.3))
+    max_grad_norm = parse_numeric_param("max_grad_norm", mgn_raw, float, min_val=0.01)
+
+    # Warmup ratio
+    wr_raw = training_config.get("warmup_ratio", q_training.get("warmup_ratio", 0.03))
+    warmup_ratio = parse_numeric_param("warmup_ratio", wr_raw, float, min_val=0.0, max_val=1.0)
+
+    # Epochs
+    nte_raw = training_config.get("num_train_epochs", q_training.get("num_train_epochs", 3))
+    num_train_epochs = parse_numeric_param("num_train_epochs", nte_raw, int, min_val=1)
+
+    # Batch sizes
+    bs_raw = training_config.get("per_device_train_batch_size", q_training.get("per_device_train_batch_size", 1))
+    per_device_train_batch_size = parse_numeric_param("per_device_train_batch_size", bs_raw, int, min_val=1)
+
+    ebs_raw = training_config.get("per_device_eval_batch_size", 1)
+    per_device_eval_batch_size = parse_numeric_param("per_device_eval_batch_size", ebs_raw, int, min_val=1)
+
+    # Dataset size
+    ds_raw = training_config.get("dataset_size", 384)
+    dataset_size = parse_numeric_param("dataset_size", ds_raw, int, min_val=1)
+
+    # Compute steps and warmup steps
+    steps_per_epoch = max(1, dataset_size // (per_device_train_batch_size * gradient_accumulation_steps))
+    total_steps = steps_per_epoch * num_train_epochs
+    warmup_steps = max(1, int(total_steps * warmup_ratio))
+
+    # Cadence
+    ls_raw = training_config.get("logging_steps", q_training.get("logging_steps", 5))
+    logging_steps = parse_numeric_param("logging_steps", ls_raw, int, min_val=1)
+
+    ss_raw = training_config.get("save_steps", q_training.get("save_steps", 50))
+    save_steps = parse_numeric_param("save_steps", ss_raw, int, min_val=1)
+
+    es_raw = training_config.get("eval_steps", q_training.get("eval_steps", 50))
+    eval_steps = parse_numeric_param("eval_steps", es_raw, int, min_val=1)
+
+    stl_raw = training_config.get("save_total_limit", q_training.get("save_total_limit", 3))
+    save_total_limit = parse_numeric_param("save_total_limit", stl_raw, int, min_val=1)
+
+    dnw_raw = training_config.get("dataloader_num_workers", q_training.get("dataloader_num_workers", 0))
+    dataloader_num_workers = parse_numeric_param("dataloader_num_workers", dnw_raw, int, min_val=0)
+
+    msl_raw = bm_cfg.get("max_length", qlora_cfg.get("sequence", {}).get("max_length", 2048))
+    max_seq_length = parse_numeric_param("max_seq_length", msl_raw, int, min_val=1)
+
+    # String parameters
+    output_dir = str(training_config.get("output_dir", "./checkpoints"))
+    optim = str(q_training.get("optim", training_config.get("optim", "paged_adamw_8bit")))
+    lr_scheduler_type = str(q_training.get("lr_scheduler_type", training_config.get("lr_scheduler_type", "cosine")))
+
+    # Boolean parameters
+    gradient_checkpointing = bool(q_training.get("gradient_checkpointing", training_config.get("gradient_checkpointing", True)))
+    fp16 = bool(q_training.get("fp16", training_config.get("fp16", False)))
+    bf16 = bool(q_training.get("bf16", training_config.get("bf16", True)))
+    tf32 = bool(q_training.get("tf32", training_config.get("tf32", True)))
+    dataloader_pin_memory = bool(q_training.get("dataloader_pin_memory", training_config.get("dataloader_pin_memory", False)))
+    remove_unused_columns = bool(q_training.get("remove_unused_columns", training_config.get("remove_unused_columns", False)))
+
+    return {
+        "output_dir": output_dir,
+        "learning_rate": learning_rate,
+        "weight_decay": weight_decay,
+        "warmup_steps": warmup_steps,
+        "warmup_ratio": warmup_ratio,
+        "num_train_epochs": num_train_epochs,
+        "per_device_train_batch_size": per_device_train_batch_size,
+        "per_device_eval_batch_size": per_device_eval_batch_size,
+        "gradient_accumulation_steps": gradient_accumulation_steps,
+        "max_grad_norm": max_grad_norm,
+        "logging_steps": logging_steps,
+        "save_steps": save_steps,
+        "eval_steps": eval_steps,
+        "save_total_limit": save_total_limit,
+        "max_seq_length": max_seq_length,
+        "dataset_size": dataset_size,
+        "steps_per_epoch": steps_per_epoch,
+        "total_steps": total_steps,
+        "dataloader_num_workers": dataloader_num_workers,
+        "optim": optim,
+        "lr_scheduler_type": lr_scheduler_type,
+        "gradient_checkpointing": gradient_checkpointing,
+        "fp16": fp16,
+        "bf16": bf16,
+        "tf32": tf32,
+        "dataloader_pin_memory": dataloader_pin_memory,
+        "remove_unused_columns": remove_unused_columns,
+    }
+
+
 class OloricTrainer:
     """Handles training of OLORIC model."""
     
@@ -113,21 +299,79 @@ class OloricTrainer:
         Returns:
             Processed dataset
         """
-        # Convert examples to format expected by formatter
         formatted_examples = []
-        
         for example in examples:
-            # This would convert structured examples to input/target pairs
-            # For now, returning placeholder
             formatted_examples.append(example)
-        
-        # In a real implementation, we would:
-        # 1. Convert each example to input text using formatter.format_input
-        # 2. Convert target to output text using formatter.format_output
-        # 3. Concatenate input and target for language modeling
-        # 4. Tokenize the result
-        
         return formatted_examples
+
+    def get_training_arguments(self) -> TrainingArguments:
+        """
+        Validate all training parameters strictly, print their resolved values and types,
+        and construct TrainingArguments.
+        """
+        params = validate_training_parameters(
+            self.training_config,
+            self.qlora_config,
+            self.model_config.get("base_model", {})
+        )
+
+        print("=" * 60)
+        print("OLORIC TRAINING PARAMETER TYPE VALIDATION:")
+        print("=" * 60)
+        numeric_keys = [
+            "learning_rate",
+            "weight_decay",
+            "warmup_steps",
+            "num_train_epochs",
+            "per_device_train_batch_size",
+            "per_device_eval_batch_size",
+            "gradient_accumulation_steps",
+            "max_grad_norm",
+            "logging_steps",
+            "save_steps",
+            "eval_steps",
+            "save_total_limit",
+            "max_seq_length",
+            "lr_scheduler_type",
+            "optim",
+        ]
+        for k in numeric_keys:
+            val = params[k]
+            print(f"  {k} = {val}")
+            print(f"  type = {type(val)}")
+        print("=" * 60)
+
+        cuda_available = torch.cuda.is_available()
+        bf16_flag = params["bf16"] if cuda_available else False
+        tf32_flag = params["tf32"] if cuda_available else False
+        optim_choice = params["optim"] if cuda_available else "adamw_torch"
+
+        training_args = TrainingArguments(
+            output_dir=params["output_dir"],
+            num_train_epochs=params["num_train_epochs"],
+            per_device_train_batch_size=params["per_device_train_batch_size"],
+            per_device_eval_batch_size=params["per_device_eval_batch_size"],
+            gradient_accumulation_steps=params["gradient_accumulation_steps"],
+            gradient_checkpointing=params["gradient_checkpointing"],
+            optim=optim_choice,
+            learning_rate=params["learning_rate"],
+            weight_decay=params["weight_decay"],
+            max_grad_norm=params["max_grad_norm"],
+            warmup_steps=params["warmup_steps"],
+            lr_scheduler_type=params["lr_scheduler_type"],
+            logging_steps=params["logging_steps"],
+            save_steps=params["save_steps"],
+            eval_steps=params["eval_steps"],
+            save_total_limit=params["save_total_limit"],
+            fp16=params["fp16"],
+            bf16=bf16_flag,
+            tf32=tf32_flag,
+            dataloader_pin_memory=params["dataloader_pin_memory"],
+            dataloader_num_workers=params["dataloader_num_workers"],
+            remove_unused_columns=params["remove_unused_columns"],
+            report_to="none",
+        )
+        return training_args
     
     def train(self, train_dataset: Any, eval_dataset: Optional[Any] = None) -> Trainer:
         """
@@ -143,49 +387,7 @@ class OloricTrainer:
         if self.model is None or self.tokenizer is None:
             self.setup_model_and_tokenizer()
         
-        # Training arguments
-        # Transformers 5.x removed warmup_ratio; compute warmup_steps from
-        # the intended 3% warmup fraction over the estimated total training
-        # steps so the warm-up behaviour is preserved semantically.
-        _num_epochs = self.training_config.get("num_train_epochs", 3)
-        _per_device_bs = self.training_config.get("per_device_train_batch_size", 1)
-        # Gradient accumulation: qlora.yaml is the authoritative source (empirically tested at 4)
-        _grad_accum = (
-            self.qlora_config.get("training", {}).get("gradient_accumulation_steps")
-            or self.training_config.get("gradient_accumulation_steps", 4)
-        )
-        _warmup_fraction = self.training_config.get("warmup_ratio", 0.03)
-        # Training dataset size: 384 examples (80% split of 480 audited examples).
-        _dataset_size = self.training_config.get("dataset_size", 384)
-        _steps_per_epoch = max(1, _dataset_size // (_per_device_bs * _grad_accum))
-        _total_steps = _steps_per_epoch * _num_epochs
-        _warmup_steps = max(1, int(_total_steps * _warmup_fraction))
-
-        training_args = TrainingArguments(
-            output_dir=self.training_config.get("output_dir", "./checkpoints"),
-            num_train_epochs=_num_epochs,
-            per_device_train_batch_size=_per_device_bs,
-            per_device_eval_batch_size=self.training_config.get("per_device_eval_batch_size", 1),
-            gradient_accumulation_steps=_grad_accum,
-            gradient_checkpointing=self.training_config.get("gradient_checkpointing", True),
-            optim=self.training_config.get("optim", "paged_adamw_8bit"),
-            learning_rate=self.training_config.get("learning_rate", 2e-4),
-            weight_decay=self.training_config.get("weight_decay", 0.01),
-            max_grad_norm=self.training_config.get("max_grad_norm", 0.3),
-            warmup_steps=_warmup_steps,  # replaces deprecated warmup_ratio
-            lr_scheduler_type=self.training_config.get("lr_scheduler_type", "cosine"),
-            logging_steps=self.training_config.get("logging_steps", 5),
-            save_steps=self.training_config.get("save_steps", 50),
-            eval_steps=self.training_config.get("eval_steps", 50),
-            save_total_limit=self.training_config.get("save_total_limit", 3),
-            fp16=self.training_config.get("fp16", False),
-            bf16=self.training_config.get("bf16", True),
-            tf32=self.training_config.get("tf32", True),
-            dataloader_pin_memory=self.training_config.get("dataloader_pin_memory", False),
-            dataloader_num_workers=self.training_config.get("dataloader_num_workers", 0),
-            remove_unused_columns=False,
-            report_to="none"  # Disable wandb/comet logging
-        )
+        training_args = self.get_training_arguments()
         
         # Data collator
         data_collator = DataCollatorForLanguageModeling(

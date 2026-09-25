@@ -148,6 +148,8 @@ def main():
         
     except Exception as e:
         print(f"Error initializing trainer: {e}")
+        import traceback
+        traceback.print_exc()
         return 1
     
     # Start training
@@ -167,6 +169,8 @@ def main():
         
     except Exception as e:
         print(f"Error during training: {e}")
+        import traceback
+        traceback.print_exc()
         return 1
     
     print("=" * 60)

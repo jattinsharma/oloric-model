@@ -39,7 +39,7 @@ training:
   gradient_accumulation_steps: 4  # Effective batch size = 4 (matches L4 smoke test; do NOT change)
   gradient_checkpointing: True  # Save memory at cost of computation
   optim: "paged_adamw_8bit"
-  learning_rate: 2e-4
+  learning_rate: 2.0e-4
   weight_decay: 0.01
   max_grad_norm: 0.3
   warmup_ratio: 0.03  # Preserved for documentation; training.py converts to warmup_steps

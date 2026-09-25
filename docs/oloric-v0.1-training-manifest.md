@@ -65,7 +65,7 @@
 | Hyperparameter | Value | Rationale |
 | :--- | :--- | :--- |
 | **Optimizer** | `paged_adamw_8bit` | Prevents OOM spikes during memory allocation |
-| **Learning Rate** | `2e-4` (0.0002) | Standard QLoRA learning rate for 4B base models |
+| **Learning Rate** | `2.0e-4` (0.0002, float) | Explicit float notation for YAML 1.1 / PyYAML compatibility |
 | **Weight Decay** | `0.01` | L2 regularization |
 | **Max Gradient Norm** | `0.3` | Gradient clipping threshold |
 | **Learning Rate Scheduler** | `cosine` | Cosine decay to zero |
