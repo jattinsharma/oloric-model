@@ -42,34 +42,12 @@ def load_dataset(file_path: str) -> List[TrainingExample]:
                 print(f"Warning: Invalid JSON on line {line_num}: {e}")
             except Exception as e:
                 print(f"Warning: Error parsing example on line {line_num}: {e}")
-    
     return examples
 
-def prepare_datasets(train_examples: List[TrainingExample], 
-                    val_examples: List[TrainingExample] = None) -> Any:
-    """
-    Prepare datasets for training.
-    
-    Args:
-        train_examples: Training examples
-        val_examples: Validation examples (optional)
-        
-    Returns:
-        Prepared datasets
-    """
-    # In a real implementation, we would:
-    # 1. Convert examples to input/target text pairs
-    # 2. Tokenize them
-    # 3. Create PyTorch datasets
-    
-    # For this script, we'll return the examples directly
-    # The actual tokenization would happen in the trainer
-    print(f"Preparing {len(train_examples)} training examples")
-    if val_examples:
-        print(f"Preparing {len(val_examples)} validation examples")
-    
-    # Placeholder - in reality, this would return tokenized datasets
-    return train_examples, val_examples
+
+def examples_to_dicts(examples: List[TrainingExample]) -> List[dict]:
+    """Convert TrainingExample Pydantic objects to plain dicts for tokenization."""
+    return [ex.dict() for ex in examples]
 
 def main():
     """Main training function."""
@@ -120,59 +98,80 @@ def main():
     if len(train_examples) == 0:
         print("Error: No training examples loaded")
         return 1
-    
-    # Prepare datasets
-    print("Preparing datasets...")
-    try:
-        train_dataset, val_dataset = prepare_datasets(train_examples, val_examples)
-    except Exception as e:
-        print(f"Error preparing datasets: {e}")
-        return 1
-    
+
+    # Convert Pydantic objects to plain dicts for tokenization
+    print("Converting examples to dicts...")
+    train_dicts = examples_to_dicts(train_examples)
+    val_dicts   = examples_to_dicts(val_examples) if val_examples else None
+
     # Initialize trainer
     print("Initializing trainer...")
     try:
         trainer = OloricTrainer()
-        
+
         # Override config if specified
         if args.model_name:
             print(f"Overriding model name to: {args.model_name}")
             trainer.model_config.setdefault("base_model", {})["name"] = args.model_name
-        
+
         # Override training args if specified
         if args.logging_steps is not None:
             trainer.training_config["logging_steps"] = args.logging_steps
         if args.save_steps is not None:
             trainer.training_config["save_steps"] = args.save_steps
             trainer.training_config["eval_steps"] = args.save_steps
-        
+
     except Exception as e:
         print(f"Error initializing trainer: {e}")
         import traceback
         traceback.print_exc()
         return 1
-    
+
+    # Setup model & tokenizer FIRST so formatter is available for tokenization
+    print("Setting up model and tokenizer...")
+    try:
+        trainer.setup_model_and_tokenizer()
+    except Exception as e:
+        print(f"Error setting up model/tokenizer: {e}")
+        import traceback
+        traceback.print_exc()
+        return 1
+
+    # Tokenize datasets using the live formatter (model must be loaded first)
+    print("Tokenizing datasets...")
+    try:
+        train_dataset = trainer.prepare_dataset(train_dicts)
+        val_dataset   = trainer.prepare_dataset(val_dicts) if val_dicts else None
+        print(f"Train dataset: {len(train_dataset)} examples tokenized")
+        if val_dataset:
+            print(f"Val dataset:   {len(val_dataset)} examples tokenized")
+    except Exception as e:
+        print(f"Error tokenizing datasets: {e}")
+        import traceback
+        traceback.print_exc()
+        return 1
+
     # Start training
     print("Starting training...")
     try:
         start_time = time.time()
         trainer_obj = trainer.train(train_dataset, val_dataset)
         end_time = time.time()
-        
+
         training_time = end_time - start_time
         print(f"Training completed in {training_time/3600:.2f} hours")
-        
+
         # Save final model
         final_output_dir = os.path.join(args.output_dir, "final_model")
         trainer.save_model(final_output_dir)
         print(f"Final model saved to: {final_output_dir}")
-        
+
     except Exception as e:
         print(f"Error during training: {e}")
         import traceback
         traceback.print_exc()
         return 1
-    
+
     print("=" * 60)
     print("Training completed successfully!")
     print("=" * 60)

@@ -3,6 +3,7 @@ Training pipeline for OLORIC model.
 """
 import os
 import torch
+from torch.utils.data import Dataset
 from typing import Dict, Any, Optional, Tuple, List
 from transformers import (
     AutoModelForCausalLM,
@@ -10,6 +11,7 @@ from transformers import (
     TrainingArguments,
     Trainer,
     DataCollatorForLanguageModeling,
+    default_data_collator,
     BitsAndBytesConfig
 )
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
@@ -19,6 +21,51 @@ from .formatting import OloricFormatter
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+class OloricTorchDataset(Dataset):
+    """
+    PyTorch Dataset that tokenizes raw TrainingExample dicts on-the-fly.
+
+    Each item returns a dict:
+        {
+            "input_ids":      torch.LongTensor  [max_length]
+            "attention_mask": torch.LongTensor  [max_length]
+            "labels":         torch.LongTensor  [max_length]  (-100 at prompt/pad)
+        }
+    This is the format expected by HuggingFace Trainer +
+    DataCollatorForLanguageModeling (mlm=False).
+    """
+
+    def __init__(
+        self,
+        examples: List[Dict[str, Any]],
+        formatter: OloricFormatter,
+        max_length: int = 2048,
+    ):
+        """
+        Args:
+            examples:   List of raw example dicts (loaded from train.jsonl).
+            formatter:  OloricFormatter with a live tokenizer attached.
+            max_length: Sequence length cap (must match training config).
+        """
+        self.examples   = examples
+        self.formatter  = formatter
+        self.max_length = max_length
+
+    def __len__(self) -> int:
+        return len(self.examples)
+
+    def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
+        features = self.formatter.tokenize_example(
+            self.examples[idx],
+            max_length=self.max_length,
+        )
+        return {
+            "input_ids":      torch.tensor(features["input_ids"],      dtype=torch.long),
+            "attention_mask": torch.tensor(features["attention_mask"], dtype=torch.long),
+            "labels":         torch.tensor(features["labels"],         dtype=torch.long),
+        }
 
 
 def parse_numeric_param(
@@ -289,20 +336,31 @@ class OloricTrainer:
         
         return self.model, self.tokenizer
     
-    def prepare_dataset(self, examples: List[Dict[str, Any]]) -> Any:
+    def prepare_dataset(
+        self,
+        examples: List[Dict[str, Any]],
+        max_length: Optional[int] = None,
+    ) -> "OloricTorchDataset":
         """
-        Prepare dataset for training.
-        
+        Tokenize raw TrainingExample dicts and return a PyTorch Dataset
+        whose ``__getitem__`` returns ``{input_ids, attention_mask, labels}``
+        tensors ready for HuggingFace ``Trainer``.
+
         Args:
-            examples: List of training examples
-            
+            examples:   List of raw dicts (from train.jsonl / TrainingExample.dict()).
+            max_length: Sequence length cap; falls back to model config.
+
         Returns:
-            Processed dataset
+            OloricTorchDataset
         """
-        formatted_examples = []
-        for example in examples:
-            formatted_examples.append(example)
-        return formatted_examples
+        if self.formatter is None:
+            raise RuntimeError(
+                "OloricTrainer.formatter is None — call setup_model_and_tokenizer() first."
+            )
+        if max_length is None:
+            max_length = self.model_config.get("base_model", {}).get("max_length", 2048)
+        logger.info("Tokenizing %d examples (max_length=%d) …", len(examples), max_length)
+        return OloricTorchDataset(examples, self.formatter, max_length=max_length)
 
     def get_training_arguments(self) -> TrainingArguments:
         """
@@ -390,10 +448,11 @@ class OloricTrainer:
         training_args = self.get_training_arguments()
         
         # Data collator
-        data_collator = DataCollatorForLanguageModeling(
-            tokenizer=self.tokenizer,
-            mlm=False,
-        )
+        # We use default_data_collator because OloricTorchDataset yields fully padded
+        # tensors with target-only supervision (-100 on prompt and padding tokens).
+        # DataCollatorForLanguageModeling(mlm=False) would otherwise overwrite labels
+        # with input_ids.clone(), destroying prompt loss masking.
+        data_collator = default_data_collator
         
         # Create trainer
         trainer = Trainer(
