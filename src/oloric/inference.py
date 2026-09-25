@@ -36,6 +36,9 @@ class OloricInference:
         self.tokenizer = None
         self.formatter = None
         self.generation_config = None
+        # Literal text produced by the last generate_response() call, preserved
+        # verbatim for audit/evaluation purposes (before any parsing).
+        self.last_raw_text: Optional[str] = None
 
         self._setup_model()
 
@@ -91,11 +94,20 @@ class OloricInference:
         # Setup formatter
         self.formatter = OloricFormatter(self.tokenizer)
 
-        # Setup generation config
+        # Setup generation config.
+        # Settings are aligned 1:1 with the baseline benchmark inference run
+        # (evaluation/baseline/config.json -> generation_config):
+        #   max_new_tokens=1024, temperature=0.3, top_p=0.9, do_sample=True.
+        # The baseline run set no random seed, so sampling is intentionally left
+        # non-deterministic: deterministic generation would NOT match the
+        # baseline generation configuration. `eval_temperature` (0.3) is
+        # preferred when present so evaluation never falls back to the more
+        # creative default.
         eval_config = config.get_evaluation_config().get("generation", {})
         self.generation_config = GenerationConfig(
-            max_new_tokens=eval_config.get("max_new_tokens", 512),
-            temperature=eval_config.get("temperature", 0.7),
+            max_new_tokens=eval_config.get("max_new_tokens", 1024),
+            temperature=eval_config.get("eval_temperature",
+                                        eval_config.get("temperature", 0.3)),
             top_p=eval_config.get("top_p", 0.9),
             do_sample=eval_config.get("do_sample", True),
             pad_token_id=self.tokenizer.eos_token_id
@@ -139,6 +151,9 @@ class OloricInference:
             outputs[0][input_len:],
             skip_special_tokens=True
         )
+
+        # Preserve the literal generated text for audit/evaluation purposes
+        self.last_raw_text = generated_text
 
         # Parse output
         try:

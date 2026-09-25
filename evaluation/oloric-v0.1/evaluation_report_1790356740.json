@@ -1,0 +1,75 @@
+{
+  "num_examples": 20,
+  "num_schema_valid": 19,
+  "num_schema_failures": 1,
+  "schema_failure_rate": 0.05,
+  "overall_score": {
+    "mean": 3.0,
+    "min": 3.0,
+    "max": 3.0
+  },
+  "dimension_scores": {
+    "factual_correctness": {
+      "mean": 3.0,
+      "min": 3.0,
+      "max": 3.0
+    },
+    "document_grounding": {
+      "mean": 3.0,
+      "min": 3.0,
+      "max": 3.0
+    },
+    "simplicity": {
+      "mean": 3.0,
+      "min": 3.0,
+      "max": 3.0
+    },
+    "teaching_strategy_selection": {
+      "mean": 3.0,
+      "min": 3.0,
+      "max": 3.0
+    },
+    "strategy_switching": {
+      "mean": 3.0,
+      "min": 3.0,
+      "max": 3.0
+    },
+    "misconception_detection": {
+      "mean": 3.0,
+      "min": 3.0,
+      "max": 3.0
+    },
+    "prerequisite_detection": {
+      "mean": 3.0,
+      "min": 3.0,
+      "max": 3.0
+    },
+    "context_retention": {
+      "mean": 3.0,
+      "min": 3.0,
+      "max": 3.0
+    },
+    "diagnostic_question_quality": {
+      "mean": 3.0,
+      "min": 3.0,
+      "max": 3.0
+    },
+    "understanding_check_quality": {
+      "mean": 3.0,
+      "min": 3.0,
+      "max": 3.0
+    },
+    "memory_candidate_quality": {
+      "mean": 3.0,
+      "min": 3.0,
+      "max": 3.0
+    }
+  },
+  "schema_failures": [
+    {
+      "example_id": "general_academic_practice_questions_008",
+      "raw_response": "{\n  \"action\": \"explain\",\n  \"strategy\": \"practice\",\n  \"difficulty\": \"beginner\",\n  \"response\": \"Let's practice Effective Communication with some exercises:\\n\\nProblem 1: If a speaker uses clear language, organized structure, and engaging delivery, they communicate effectively.\\n\\nProblem 2: Explain how Effective Communication relates to basic literacy.\\n\\nProblem 3: Describe a real-world application of Effective Communication in general_academic.\",\n  \"question\": \"What is the key skill demonstrated in solving these Effective Communication problems?\",\n  \"understanding_check\": {\n    \"required\": true,\n    \"expected_answer\": \"The key skill is applying Effective Communication to solve problems because it underpins rigorous academic work and rational thought.\"\n  },\n  \"diagnosis\": {\n    \"confusion_type\": \"conceptual\",\n    \"severity\": \"low\",\n    \"misconception_addressed\": null\n  },\n  \"memory\": {\n    \"candidate\": true,\n    \"title\": \"Practice problems for Effective Communication\",\n    \"content\": \"Key practice types for Effective Communication: calculation, explanation, application.\",\n    \"anchor_concept\": \"Effective Communication\",\n    \"memory_type\": \"procedure\",\n    \"confidence\": 0.66\n  }\n}",
+      "validation_error": "1 validation error for OloricModelOutput\nquestion\n  Extra inputs are not permitted [type=extra_forbidden, input_value='What is the key skill dem... and rational thought.', input_type=str]"
+    }
+  ]
+}
