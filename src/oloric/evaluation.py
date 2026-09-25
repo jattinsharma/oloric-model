@@ -3,8 +3,9 @@ Evaluation suite for OLORIC model.
 """
 import json
 import os
-from typing import List, Dict, Any, Optional, Tuple
-from dataclasses import dataclass
+from typing import List, Dict, Any, Optional
+from dataclasses import dataclass, field
+from pydantic import ValidationError
 from .schemas.model_input import OloricModelInput
 from .schemas.model_output import OloricModelOutput
 from .inference import inference_engine
@@ -21,8 +22,12 @@ class EvaluationResult:
     dimension_scores: Dict[str, float]
     overall_score: float
     feedback: str
-    model_output: OloricModelOutput
+    model_output: Optional[OloricModelOutput]
     expected_output: OloricModelOutput
+    # Schema validation metadata
+    schema_valid: bool = True
+    raw_response: Optional[str] = None
+    validation_error: Optional[str] = None
 
 
 class OloricEvaluator:
@@ -59,46 +64,70 @@ class OloricEvaluator:
     def evaluate_example(self, example: Dict[str, Any]) -> EvaluationResult:
         """
         Evaluate a single example.
-        
+
+        When the model output violates the OloricModelOutput schema (e.g. a
+        required field such as ``diagnosis.severity`` is absent), the result is
+        recorded with ``schema_valid=False``, ``raw_response`` set to the
+        generated text, and ``validation_error`` containing the Pydantic error
+        detail.  The example is NOT dropped from the report.
+
         Args:
             example: Evaluation example dictionary
-            
+
         Returns:
             EvaluationResult object
         """
-        # This is a simplified evaluation - in practice, we would use rubrics
-        # and potentially human evaluation for many dimensions
-        
         example_id = example.get("id", "unknown")
-        
+
         # Convert context and target to proper objects
         context = OloricModelInput(**example["context"])
         expected_output = OloricModelOutput(**example["target"])
-        
-        # Generate model output
-        model_output = inference_engine.generate_response(context)
-        
-        # Score each dimension (placeholder implementation)
-        dimension_scores = {}
-        for dimension_name in self.dimensions.keys():
-            # Placeholder scoring - in reality, this would use rubrics
-            dimension_scores[dimension_name] = self._score_dimension(
-                dimension_name, context, model_output, expected_output
+
+        # --- Generate model output & catch schema failures ---
+        raw_response: Optional[str] = None
+        model_output: Optional[OloricModelOutput] = None
+        schema_valid = True
+        validation_error_msg: Optional[str] = None
+
+        try:
+            model_output = inference_engine.generate_response(context)
+        except ValidationError as ve:
+            schema_valid = False
+            validation_error_msg = str(ve)
+            # Attempt to recover the raw text from the formatter's last output
+            # (inference_engine stores it on the exception's raw_response attr
+            # if available; otherwise we use the string repr)
+            raw_response = getattr(ve, "raw_response", None) or repr(ve)
+            logger.warning(
+                f"Schema validation failure for example '{example_id}': "
+                f"{validation_error_msg}"
             )
-        
-        # Calculate overall score (weighted average)
-        overall_score = self._calculate_overall_score(dimension_scores)
-        
-        # Generate feedback
-        feedback = self._generate_feedback(dimension_scores, model_output, expected_output)
-        
+
+        if schema_valid:
+            # Score each dimension
+            dimension_scores = {}
+            for dimension_name in self.dimensions.keys():
+                dimension_scores[dimension_name] = self._score_dimension(
+                    dimension_name, context, model_output, expected_output
+                )
+            overall_score = self._calculate_overall_score(dimension_scores)
+            feedback = self._generate_feedback(dimension_scores, model_output, expected_output)
+        else:
+            # Cannot score without a valid output; record zeros and a failure note
+            dimension_scores = {name: 0.0 for name in self.dimensions.keys()}
+            overall_score = 0.0
+            feedback = f"Schema validation failed: {validation_error_msg}"
+
         return EvaluationResult(
             example_id=example_id,
             dimension_scores=dimension_scores,
             overall_score=overall_score,
             feedback=feedback,
             model_output=model_output,
-            expected_output=expected_output
+            expected_output=expected_output,
+            schema_valid=schema_valid,
+            raw_response=raw_response,
+            validation_error=validation_error_msg,
         )
     
     def _score_dimension(self, dimension_name: str, context: OloricModelInput,
@@ -195,7 +224,13 @@ class OloricEvaluator:
     
     def evaluate_benchmark(self, limit: Optional[int] = None) -> List[EvaluationResult]:
         """
-        evaluate the entire benchmark.
+        Evaluate the entire benchmark.
+
+        Every example is evaluated.  Schema validation failures are recorded
+        in the returned EvaluationResult (``schema_valid=False``) rather than
+        silently dropped.  Only genuine infrastructure errors (e.g. OOM, broken
+        context JSON) cause an example to be skipped, and those are logged at
+        ERROR level with a clear reason.
 
         Args:
             limit: Maximum number of examples to evaluate (None for all)
@@ -209,17 +244,33 @@ class OloricEvaluator:
 
         results = []
         for example in examples:
+            example_id = example.get("id", "unknown")
             try:
                 result = self.evaluate_example(example)
                 results.append(result)
-                logger.info(f"Evaluated example {result.example_id}: score {result.overall_score}")
+                status = "PASS" if result.schema_valid else "SCHEMA_FAIL"
+                logger.info(
+                    f"[{status}] example='{result.example_id}' "
+                    f"score={result.overall_score:.3f}"
+                )
             except Exception as e:
-                logger.error(f"Failed to evaluate example {example.get('id', 'unknown')}: {e}")
+                # Only infrastructure errors (not schema failures) land here
+                # because schema failures are caught inside evaluate_example.
+                logger.error(
+                    f"[INFRA_ERROR] example='{example_id}' skipped: "
+                    f"{type(e).__name__}: {e}"
+                )
         return results
 
     def generate_report(self, results: List[EvaluationResult]) -> Dict[str, Any]:
         """
         Generate a report from evaluation results.
+
+        The report includes:
+        - Overall and per-dimension score statistics (schema-valid results only
+          for the "valid" stats; all results for counts).
+        - A dedicated ``schema_failures`` section listing every example that
+          failed schema validation, with the raw response and error detail.
 
         Args:
             results: List of EvaluationResult objects
@@ -230,34 +281,56 @@ class OloricEvaluator:
         if not results:
             return {
                 "num_examples": 0,
+                "num_schema_valid": 0,
+                "num_schema_failures": 0,
+                "schema_failure_rate": 0.0,
                 "overall_score": {"mean": 0.0, "min": 0.0, "max": 0.0},
-                "dimension_scores": {}
+                "dimension_scores": {},
+                "schema_failures": [],
             }
 
-        # Calculate overall score statistics
-        overall_scores = [r.overall_score for r in results]
+        valid_results   = [r for r in results if r.schema_valid]
+        invalid_results = [r for r in results if not r.schema_valid]
 
-        # Calculate dimension score statistics
-        dimension_scores = {}
-        if results:
-            # Get all dimension names from the first result
-            first_result = results[0]
-            for dim_name in first_result.dimension_scores.keys():
-                dim_values = [r.dimension_scores.get(dim_name, 0.0) for r in results]
+        # --- Score statistics (schema-valid results only) ---
+        overall_scores = [r.overall_score for r in valid_results] if valid_results else [0.0]
+
+        dimension_scores: Dict[str, Any] = {}
+        if valid_results:
+            first_valid = valid_results[0]
+            for dim_name in first_valid.dimension_scores.keys():
+                dim_values = [r.dimension_scores.get(dim_name, 0.0) for r in valid_results]
                 dimension_scores[dim_name] = {
                     "mean": sum(dim_values) / len(dim_values),
-                    "min": min(dim_values),
-                    "max": max(dim_values)
+                    "min":  min(dim_values),
+                    "max":  max(dim_values),
                 }
 
+        # --- Schema failure details ---
+        schema_failures = [
+            {
+                "example_id":       r.example_id,
+                "raw_response":     r.raw_response,
+                "validation_error": r.validation_error,
+            }
+            for r in invalid_results
+        ]
+
+        num_total    = len(results)
+        num_failures = len(invalid_results)
+
         report = {
-            "num_examples": len(results),
+            "num_examples":        num_total,
+            "num_schema_valid":    num_total - num_failures,
+            "num_schema_failures": num_failures,
+            "schema_failure_rate": round(num_failures / num_total, 4),
             "overall_score": {
-                "mean": sum(overall_scores) / len(overall_scores),
-                "min": min(overall_scores),
-                "max": max(overall_scores)
+                "mean": round(sum(overall_scores) / len(overall_scores), 4),
+                "min":  round(min(overall_scores), 4),
+                "max":  round(max(overall_scores), 4),
             },
-            "dimension_scores": dimension_scores
+            "dimension_scores":  dimension_scores,
+            "schema_failures":   schema_failures,
         }
 
         return report

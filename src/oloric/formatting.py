@@ -144,20 +144,42 @@ class OloricFormatter:
         return model_output.json()
 
     def parse_output(self, generated_text: str) -> OloricModelOutput:
-        try:
-            json_match = re.search(r'\{.*\}', generated_text, re.DOTALL)
-            if json_match:
-                json_str = json_match.group()
-                return OloricModelOutput.parse_raw(json_str)
-        except Exception:
-            pass
+        """
+        Parse model-generated text into OloricModelOutput.
+
+        Raises:
+            pydantic.ValidationError: if the extracted JSON fails schema
+                validation (e.g. a required field like ``severity`` is absent).
+                The caller is responsible for catching this and recording the
+                failure rather than silently discarding the example.
+        """
+        import pydantic
+
+        json_match = re.search(r'\{.*\}', generated_text, re.DOTALL)
+        if json_match:
+            json_str = json_match.group()
+            try:
+                parsed = json.loads(json_str)
+            except json.JSONDecodeError:
+                parsed = None
+
+            if parsed is not None:
+                # Let ValidationError propagate so callers can record it.
+                return OloricModelOutput.parse_obj(parsed)
+
+        # No JSON block found at all — return a clearly-marked fallback.
+        # All required fields must be present to avoid a second crash here.
         return OloricModelOutput(
             action="explain",
             strategy="simple_example",
             difficulty="beginner",
             response=generated_text.strip(),
             understanding_check=UnderstandingCheck(required=False, question=None),
-            diagnosis=Diagnosis(confusion_type="unknown", misconception=None, missing_prerequisite=None),
+            diagnosis=Diagnosis(
+                confusion_type="unknown",
+                severity="unknown",
+                misconception_addressed=None,
+            ),
             memory=Memory(candidate=False, title=None, content=None, anchor_concept=None),
         )
 
