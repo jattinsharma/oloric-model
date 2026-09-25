@@ -1,0 +1,69 @@
+{
+  "num_examples": 20,
+  "num_schema_valid": 20,
+  "num_schema_failures": 0,
+  "schema_failure_rate": 0.0,
+  "overall_score": {
+    "mean": 3.0,
+    "min": 3.0,
+    "max": 3.0
+  },
+  "dimension_scores": {
+    "factual_correctness": {
+      "mean": 3.0,
+      "min": 3.0,
+      "max": 3.0
+    },
+    "document_grounding": {
+      "mean": 3.0,
+      "min": 3.0,
+      "max": 3.0
+    },
+    "simplicity": {
+      "mean": 3.0,
+      "min": 3.0,
+      "max": 3.0
+    },
+    "teaching_strategy_selection": {
+      "mean": 3.0,
+      "min": 3.0,
+      "max": 3.0
+    },
+    "strategy_switching": {
+      "mean": 3.0,
+      "min": 3.0,
+      "max": 3.0
+    },
+    "misconception_detection": {
+      "mean": 3.0,
+      "min": 3.0,
+      "max": 3.0
+    },
+    "prerequisite_detection": {
+      "mean": 3.0,
+      "min": 3.0,
+      "max": 3.0
+    },
+    "context_retention": {
+      "mean": 3.0,
+      "min": 3.0,
+      "max": 3.0
+    },
+    "diagnostic_question_quality": {
+      "mean": 3.0,
+      "min": 3.0,
+      "max": 3.0
+    },
+    "understanding_check_quality": {
+      "mean": 3.0,
+      "min": 3.0,
+      "max": 3.0
+    },
+    "memory_candidate_quality": {
+      "mean": 3.0,
+      "min": 3.0,
+      "max": 3.0
+    }
+  },
+  "schema_failures": []
+}

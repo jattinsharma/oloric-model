@@ -1,0 +1,17 @@
+{
+  "num_examples": 20,
+  "num_schema_valid": 19,
+  "num_schema_failures": 1,
+  "schema_failure_rate": 0.05,
+  "semantic_scoring": "manual_only",
+  "overall_score": null,
+  "dimension_scores": {},
+  "schema_failures": [
+    {
+      "example_id": "general_academic_practice_questions_008",
+      "raw_response": "{\"action\": \"practice\", \"strategy\": \"problem_solving\", \"difficulty\": \"intermediate\", \"question\": \"If 60% of students passed and there are 100 students, how many failed?\", \"expected_answer\": \"40 students failed\", \"understanding_check\": {\"required\": true, \"question\": \"What is the key skill demonstrated in solving this problem?\", \"expected_answer\": \"The key skill is mathematical reasoning, not reading comprehension.\"}, \"diagnosis\": {\"confusion_type\": \"conceptual\", \"severity\": \"low\", \"misconception_addressed\": \"Belief that reading comprehension is more important than mathematical reasoning\"}, \"memory\": {\"candidate\": false, \"title\": \"Problem-solving skill: Effective Communication\", \"content\": \"Key skill: Mathematical reasoning. Remember that when solving problems, focus on the mathematical aspects rather than reading comprehension.\", \"anchor_concept\": \"Effective Communication\", \"memory_type\": \"skill\", \"confidence\": 0.79}}",
+      "raw_generated_text": "{\"action\": \"practice\", \"strategy\": \"problem_solving\", \"difficulty\": \"intermediate\", \"question\": \"If 60% of students passed and there are 100 students, how many failed?\", \"expected_answer\": \"40 students failed\", \"understanding_check\": {\"required\": true, \"question\": \"What is the key skill demonstrated in solving this problem?\", \"expected_answer\": \"The key skill is mathematical reasoning, not reading comprehension.\"}, \"diagnosis\": {\"confusion_type\": \"conceptual\", \"severity\": \"low\", \"misconception_addressed\": \"Belief that reading comprehension is more important than mathematical reasoning\"}, \"memory\": {\"candidate\": false, \"title\": \"Problem-solving skill: Effective Communication\", \"content\": \"Key skill: Mathematical reasoning. Remember that when solving problems, focus on the mathematical aspects rather than reading comprehension.\", \"anchor_concept\": \"Effective Communication\", \"memory_type\": \"skill\", \"confidence\": 0.79}}",
+      "validation_error": "3 validation errors for OloricModelOutput\nresponse\n  Field required [type=missing, input_value={'action': 'practice', 's...l', 'confidence': 0.79}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nquestion\n  Extra inputs are not permitted [type=extra_forbidden, input_value='If 60% of students passe...dents, how many failed?', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden\nexpected_answer\n  Extra inputs are not permitted [type=extra_forbidden, input_value='40 students failed', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden"
+    }
+  ]
+}
