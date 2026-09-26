@@ -323,6 +323,34 @@ def _get_student_turns(category: str, concept: str, info: Dict[str, Any], rng: r
 # RECORD CREATION FUNCTIONS — ONE PER CATEGORY
 # ============================================================
 
+def _make_memory(
+    candidate: bool,
+    title: Optional[str] = None,
+    content: Optional[str] = None,
+    anchor_concept: Optional[str] = None,
+    memory_type: Optional[str] = None,
+    confidence: float = 0.0,
+) -> Dict[str, Any]:
+    """Construct memory object conforming to schema hygiene."""
+    if candidate:
+        return {
+            "candidate": True,
+            "title": title,
+            "content": content,
+            "anchor_concept": anchor_concept,
+            "memory_type": memory_type,
+            "confidence": confidence,
+        }
+    return {
+        "candidate": False,
+        "title": None,
+        "content": None,
+        "anchor_concept": None,
+        "memory_type": None,
+        "confidence": 0.0,
+    }
+
+
 def _make_record(
     category: str,
     domain: str,
@@ -371,14 +399,14 @@ def create_simple_explanation(domain, concept, info, index, rng):
                 "severity": rng.choice(["low", "medium"]),
                 "misconception_addressed": None,
             },
-            "memory": {
-                "candidate": rng.random() > 0.7,
-                "title": f"Key Concept: {concept}",
-                "content": f"{concept}: {info['explanation']}.",
-                "anchor_concept": concept,
-                "memory_type": "definition",
-                "confidence": round(rng.uniform(0.6, 0.9), 2),
-            },
+            "memory": _make_memory(
+                candidate=rng.random() > 0.7,
+                title=f"Key Concept: {concept}",
+                content=f"{concept}: {info['explanation']}.",
+                anchor_concept=concept,
+                memory_type="definition",
+                confidence=round(rng.uniform(0.6, 0.9), 2),
+            ),
         },
     )
 
@@ -402,14 +430,14 @@ def create_simplification(domain, concept, info, index, rng):
                 "expected_answer": f"It means {info['explanation']}."
             },
             "diagnosis": {"confusion_type": "conceptual", "severity": "medium", "misconception_addressed": None},
-            "memory": {
-                "candidate": rng.random() > 0.6,
-                "title": f"Simple Definition: {concept}",
-                "content": f"{concept} simply means {info['explanation']}.",
-                "anchor_concept": concept,
-                "memory_type": "definition",
-                "confidence": round(rng.uniform(0.7, 0.9), 2),
-            },
+            "memory": _make_memory(
+                candidate=rng.random() > 0.6,
+                title=f"Simple Definition: {concept}",
+                content=f"{concept} simply means {info['explanation']}.",
+                anchor_concept=concept,
+                memory_type="definition",
+                confidence=round(rng.uniform(0.7, 0.9), 2),
+            ),
         },
     )
 
@@ -433,14 +461,14 @@ def create_analogy(domain, concept, info, index, rng):
                 "expected_answer": f"The analogy illustrates that {info['explanation']}."
             },
             "diagnosis": {"confusion_type": "conceptual", "severity": rng.choice(["low", "medium"]), "misconception_addressed": None},
-            "memory": {
-                "candidate": rng.random() > 0.6,
-                "title": f"Analogy for {concept}",
-                "content": f"Remember: {analogy}",
-                "anchor_concept": concept,
-                "memory_type": "analogy",
-                "confidence": round(rng.uniform(0.7, 0.9), 2),
-            },
+            "memory": _make_memory(
+                candidate=rng.random() > 0.6,
+                title=f"Analogy for {concept}",
+                content=f"Remember: {analogy}",
+                anchor_concept=concept,
+                memory_type="analogy",
+                confidence=round(rng.uniform(0.7, 0.9), 2),
+            ),
         },
     )
 
@@ -466,14 +494,14 @@ def create_concrete_example(domain, concept, info, index, rng):
                 "expected_answer": f"{concept} is {info['explanation']}."
             },
             "diagnosis": {"confusion_type": "conceptual", "severity": rng.choice(["low", "medium"]), "misconception_addressed": None},
-            "memory": {
-                "candidate": rng.random() > 0.5,
-                "title": f"Example of {concept}",
-                "content": f"Key example: {ex1}",
-                "anchor_concept": concept,
-                "memory_type": "example",
-                "confidence": round(rng.uniform(0.6, 0.8), 2),
-            },
+            "memory": _make_memory(
+                candidate=rng.random() > 0.5,
+                title=f"Example of {concept}",
+                content=f"Key example: {ex1}",
+                anchor_concept=concept,
+                memory_type="example",
+                confidence=round(rng.uniform(0.6, 0.8), 2),
+            ),
         },
     )
 
@@ -499,14 +527,14 @@ def create_numerical_example(domain, concept, info, index, rng):
                 "expected_answer": f"{concept} demonstrates that {info['explanation']}."
             },
             "diagnosis": {"confusion_type": "conceptual", "severity": rng.choice(["low", "medium"]), "misconception_addressed": None},
-            "memory": {
-                "candidate": rng.random() > 0.5,
-                "title": f"Numerical example: {concept}",
-                "content": f"Key calculation: {n1}",
-                "anchor_concept": concept,
-                "memory_type": "example",
-                "confidence": round(rng.uniform(0.6, 0.8), 2),
-            },
+            "memory": _make_memory(
+                candidate=rng.random() > 0.5,
+                title=f"Numerical example: {concept}",
+                content=f"Key calculation: {n1}",
+                anchor_concept=concept,
+                memory_type="example",
+                confidence=round(rng.uniform(0.6, 0.8), 2),
+            ),
         },
     )
 
@@ -589,14 +617,14 @@ def create_prerequisite_detection(domain, concept, info, index, rng):
                 "severity": "medium",
                 "misconception_addressed": None,
             },
-            "memory": {
-                "candidate": rng.random() > 0.6,
-                "title": f"Prerequisite for {concept}",
-                "content": f"You must understand {missing_prereq} before learning {concept}.",
-                "anchor_concept": concept,
-                "memory_type": "prerequisite",
-                "confidence": round(rng.uniform(0.7, 0.9), 2),
-            },
+            "memory": _make_memory(
+                candidate=rng.random() > 0.6,
+                title=f"Prerequisite for {concept}",
+                content=f"You must understand {missing_prereq} before learning {concept}.",
+                anchor_concept=concept,
+                memory_type="prerequisite",
+                confidence=round(rng.uniform(0.7, 0.9), 2),
+            ),
         },
     )
 
@@ -626,14 +654,14 @@ def create_misconception_correction(domain, concept, info, index, rng):
                 "severity": "medium",
                 "misconception_addressed": misconception,
             },
-            "memory": {
-                "candidate": rng.random() > 0.6,
-                "title": f"Misconception correction: {concept}",
-                "content": f"Remember: '{misconception}' is WRONG. {refutation}",
-                "anchor_concept": concept,
-                "memory_type": "misconception_correction",
-                "confidence": round(rng.uniform(0.7, 0.9), 2),
-            },
+            "memory": _make_memory(
+                candidate=rng.random() > 0.6,
+                title=f"Misconception correction: {concept}",
+                content=f"Remember: '{misconception}' is WRONG. {refutation}",
+                anchor_concept=concept,
+                memory_type="misconception_correction",
+                confidence=round(rng.uniform(0.7, 0.9), 2),
+            ),
         },
     )
 
@@ -656,14 +684,14 @@ def create_multi_turn_tutoring(domain, concept, info, index, rng):
                 "expected_answer": f"{concept} means {info['explanation']}."
             },
             "diagnosis": {"confusion_type": "conceptual", "severity": "low", "misconception_addressed": None},
-            "memory": {
-                "candidate": rng.random() > 0.5,
-                "title": f"Multi-turn insight: {concept}",
-                "content": f"From our discussion: {info['explanation']}.",
-                "anchor_concept": concept,
-                "memory_type": "insight",
-                "confidence": round(rng.uniform(0.6, 0.8), 2),
-            },
+            "memory": _make_memory(
+                candidate=rng.random() > 0.5,
+                title=f"Multi-turn insight: {concept}",
+                content=f"From our discussion: {info['explanation']}.",
+                anchor_concept=concept,
+                memory_type="insight",
+                confidence=round(rng.uniform(0.6, 0.8), 2),
+            ),
         },
     )
 
@@ -687,14 +715,14 @@ def create_repeated_confusion(domain, concept, info, index, rng):
                 "expected_answer": f"The key was seeing {concept} through a practical example rather than abstract definitions."
             },
             "diagnosis": {"confusion_type": "conceptual", "severity": "medium", "misconception_addressed": None},
-            "memory": {
-                "candidate": rng.random() > 0.6,
-                "title": f"Breakthrough: {concept}",
-                "content": f"When confused about {concept}, remember: {ex}",
-                "anchor_concept": concept,
-                "memory_type": "strategy",
-                "confidence": round(rng.uniform(0.7, 0.9), 2),
-            },
+            "memory": _make_memory(
+                candidate=rng.random() > 0.6,
+                title=f"Breakthrough: {concept}",
+                content=f"When confused about {concept}, remember: {ex}",
+                anchor_concept=concept,
+                memory_type="strategy",
+                confidence=round(rng.uniform(0.7, 0.9), 2),
+            ),
         },
     )
 
@@ -718,14 +746,14 @@ def create_strategy_switching(domain, concept, info, index, rng):
                 "expected_answer": "The analogy made the abstract concept more concrete and relatable."
             },
             "diagnosis": {"confusion_type": "conceptual", "severity": "medium", "misconception_addressed": None},
-            "memory": {
-                "candidate": rng.random() > 0.6,
-                "title": f"Strategy switch for {concept}",
-                "content": f"When standard explanations don't work for {concept}, try: {analogy}",
-                "anchor_concept": concept,
-                "memory_type": "strategy",
-                "confidence": round(rng.uniform(0.7, 0.9), 2),
-            },
+            "memory": _make_memory(
+                candidate=rng.random() > 0.6,
+                title=f"Strategy switch for {concept}",
+                content=f"When standard explanations don't work for {concept}, try: {analogy}",
+                anchor_concept=concept,
+                memory_type="strategy",
+                confidence=round(rng.uniform(0.7, 0.9), 2),
+            ),
         },
     )
 
@@ -751,14 +779,14 @@ def create_hint_based_teaching(domain, concept, info, index, rng):
                 "expected_answer": f"{info['explanation']}."
             },
             "diagnosis": {"confusion_type": "conceptual", "severity": "medium", "misconception_addressed": None},
-            "memory": {
-                "candidate": rng.random() > 0.5,
-                "title": f"Hints for {concept}",
-                "content": f"Key hints: {h1} and {h2}.",
-                "anchor_concept": concept,
-                "memory_type": "hint",
-                "confidence": round(rng.uniform(0.6, 0.8), 2),
-            },
+            "memory": _make_memory(
+                candidate=rng.random() > 0.5,
+                title=f"Hints for {concept}",
+                content=f"Key hints: {h1} and {h2}.",
+                anchor_concept=concept,
+                memory_type="hint",
+                confidence=round(rng.uniform(0.6, 0.8), 2),
+            ),
         },
     )
 
@@ -783,14 +811,14 @@ def create_practice_questions(domain, concept, info, index, rng):
                 "expected_answer": f"The key skill is applying {concept}: {info['explanation']}."
             },
             "diagnosis": {"confusion_type": "conceptual", "severity": "low", "misconception_addressed": None},
-            "memory": {
-                "candidate": rng.random() > 0.5,
-                "title": f"Practice for {concept}",
-                "content": f"Key practice types: calculation, explanation, application.",
-                "anchor_concept": concept,
-                "memory_type": "procedure",
-                "confidence": round(rng.uniform(0.6, 0.8), 2),
-            },
+            "memory": _make_memory(
+                candidate=rng.random() > 0.5,
+                title=f"Practice for {concept}",
+                content=f"Key practice types: calculation, explanation, application.",
+                anchor_concept=concept,
+                memory_type="procedure",
+                confidence=round(rng.uniform(0.6, 0.8), 2),
+            ),
         },
     )
 
@@ -818,14 +846,14 @@ def create_error_correction(domain, concept, info, index, rng):
                 "severity": "medium",
                 "misconception_addressed": misconception,
             },
-            "memory": {
-                "candidate": rng.random() > 0.6,
-                "title": f"Corrected understanding: {concept}",
-                "content": f"Remember: {info['explanation']}, NOT '{misconception}'.",
-                "anchor_concept": concept,
-                "memory_type": "misconception_correction",
-                "confidence": round(rng.uniform(0.7, 0.9), 2),
-            },
+            "memory": _make_memory(
+                candidate=rng.random() > 0.6,
+                title=f"Corrected understanding: {concept}",
+                content=f"Remember: {info['explanation']}, NOT '{misconception}'.",
+                anchor_concept=concept,
+                memory_type="misconception_correction",
+                confidence=round(rng.uniform(0.7, 0.9), 2),
+            ),
         },
     )
 
@@ -847,14 +875,14 @@ def create_partial_understanding(domain, concept, info, index, rng):
                 "expected_answer": f"The missing aspect was understanding that {info['reason']}."
             },
             "diagnosis": {"confusion_type": "conceptual", "severity": "low", "misconception_addressed": None},
-            "memory": {
-                "candidate": rng.random() > 0.5,
-                "title": f"Complete understanding: {concept}",
-                "content": f"To fully understand {concept}: {info['explanation']} AND {info['reason']}.",
-                "anchor_concept": concept,
-                "memory_type": "concept",
-                "confidence": round(rng.uniform(0.6, 0.8), 2),
-            },
+            "memory": _make_memory(
+                candidate=rng.random() > 0.5,
+                title=f"Complete understanding: {concept}",
+                content=f"To fully understand {concept}: {info['explanation']} AND {info['reason']}.",
+                anchor_concept=concept,
+                memory_type="concept",
+                confidence=round(rng.uniform(0.6, 0.8), 2),
+            ),
         },
     )
 
@@ -877,14 +905,14 @@ def create_understanding_confirmation(domain, concept, info, index, rng):
                 "expected_answer": f"I would explain that {info['explanation']} and that {info['reason']}."
             },
             "diagnosis": {"confusion_type": "conceptual", "severity": "low", "misconception_addressed": None},
-            "memory": {
-                "candidate": rng.random() > 0.7,
-                "title": f"Mastered: {concept}",
-                "content": f"You now understand {concept}: {info['explanation']}. Example: {ex}",
-                "anchor_concept": concept,
-                "memory_type": "mastery",
-                "confidence": round(rng.uniform(0.8, 0.95), 2),
-            },
+            "memory": _make_memory(
+                candidate=rng.random() > 0.7,
+                title=f"Mastered: {concept}",
+                content=f"You now understand {concept}: {info['explanation']}. Example: {ex}",
+                anchor_concept=concept,
+                memory_type="mastery",
+                confidence=round(rng.uniform(0.8, 0.95), 2),
+            ),
         },
     )
 
@@ -909,14 +937,14 @@ def create_memory_generation(domain, concept, info, index, rng):
                 "expected_answer": f"{concept} means {info['explanation']} and matters because {info['reason']}."
             },
             "diagnosis": {"confusion_type": "conceptual", "severity": "low", "misconception_addressed": None},
-            "memory": {
-                "candidate": True,
-                "title": f"Essential: {concept}",
-                "content": f"{concept}: {info['explanation']}. Why: {info['reason']}. Example: {ex}",
-                "anchor_concept": concept,
-                "memory_type": "definition",
-                "confidence": round(rng.uniform(0.8, 0.95), 2),
-            },
+            "memory": _make_memory(
+                candidate=True,
+                title=f"Essential: {concept}",
+                content=f"{concept}: {info['explanation']}. Why: {info['reason']}. Example: {ex}",
+                anchor_concept=concept,
+                memory_type="definition",
+                confidence=round(rng.uniform(0.8, 0.95), 2),
+            ),
         },
     )
 
@@ -942,14 +970,14 @@ def create_document_grounded(domain, concept, info, index, rng):
                 "expected_answer": f"The document states: '{ev1}', which shows that {info['explanation']}."
             },
             "diagnosis": {"confusion_type": "conceptual", "severity": "low", "misconception_addressed": None},
-            "memory": {
-                "candidate": rng.random() > 0.5,
-                "title": f"Document insight: {concept}",
-                "content": f"From reading: {ev1}",
-                "anchor_concept": concept,
-                "memory_type": "document_insight",
-                "confidence": round(rng.uniform(0.6, 0.8), 2),
-            },
+            "memory": _make_memory(
+                candidate=rng.random() > 0.5,
+                title=f"Document insight: {concept}",
+                content=f"From reading: {ev1}",
+                anchor_concept=concept,
+                memory_type="document_insight",
+                confidence=round(rng.uniform(0.6, 0.8), 2),
+            ),
         },
     )
 
@@ -982,14 +1010,14 @@ def create_context_retention(domain, concept, info, index, rng):
                 "expected_answer": f"They are connected because {info['reason']}."
             },
             "diagnosis": {"confusion_type": "conceptual", "severity": "low", "misconception_addressed": None},
-            "memory": {
-                "candidate": rng.random() > 0.5,
-                "title": f"Connection: {concept} and {other_concept}",
-                "content": f"{concept} and {other_concept} are related through {info['reason']}.",
-                "anchor_concept": concept,
-                "memory_type": "connection",
-                "confidence": round(rng.uniform(0.6, 0.8), 2),
-            },
+            "memory": _make_memory(
+                candidate=rng.random() > 0.5,
+                title=f"Connection: {concept} and {other_concept}",
+                content=f"{concept} and {other_concept} are related through {info['reason']}.",
+                anchor_concept=concept,
+                memory_type="connection",
+                confidence=round(rng.uniform(0.6, 0.8), 2),
+            ),
         },
     )
 
