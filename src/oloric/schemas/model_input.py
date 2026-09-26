@@ -54,9 +54,13 @@ class OloricModelInput(BaseModel):
         description="History of conversation"
     )
     current_goal: str = Field(..., description="Current learning goal")
+    instruction: Optional[str] = Field(
+        default=None,
+        description="Specific tutoring instruction to execute"
+    )
 
     class Config:
         """Pydantic configuration."""
         # extra = "ignore" allows the audited dataset convenience_context field
         # to pass validation. Only declared fields are used at inference time.
-        extra = "ignore"
+        extra = "ignore"

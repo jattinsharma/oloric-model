@@ -32,7 +32,7 @@ from oloric.training import OloricTorchDataset
 
 TRAIN_JSONL = os.path.join(_repo_root, "data", "splits", "train.jsonl")
 TOKENIZER_ID = "gpt2"
-MAX_LENGTH = 256
+MAX_LENGTH = 512
 N_EXAMPLES = 2
 
 
