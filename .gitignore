@@ -86,6 +86,7 @@ data/generated*/*
 data/generated*/**
 # ... except the audited training dataset and its audit stats
 !data/generated/enhanced_seed_data.jsonl
+!data/generated/oloric_v02_dataset.jsonl
 !data/generated/audit_stats.json
 !data/generated/dataset_metadata.json
 !data/generated*/.gitkeep

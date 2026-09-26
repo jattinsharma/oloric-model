@@ -1,22 +1,23 @@
-# Oloric v0.1 — Post-Training Semantic Evaluation Report
+# Oloric v0.1 — Post-Training Semantic Evaluation Report (FINAL)
 
-**Date**: September 25, 2026
-**Model**: Oloric v0.1 (Qwen3-4B-Instruct-2507 + QLoRA adapter, `./checkpoints/final_model` on the L4 training host)
-**Benchmark**: `evaluation/benchmark.jsonl` (20 held-out examples, structured mode)
-**Rubric**: `evaluation/baseline/semantic_rubric.md` (11 dimensions, 0–4 scale, independent scores, no weighted aggregate)
+**Date**: September 26, 2026
+**Model**: Oloric v0.1 (Qwen3-4B-Instruct-2507 + QLoRA adapter, `./checkpoints/oloric-v0.1/final_model`)
+**Run**: re-run of 2026-09-25T19:44:03Z on NVIDIA L4 (per `run_config.json`), which produced `evaluation/oloric-v0.1/responses.jsonl` with all 20 raw responses.
+**Benchmark**: `evaluation/benchmark.jsonl` (20 held-out examples, structured mode). SHA verified: `run_config.json.benchmark_hash` = `92aa1cc5392016c7c042d4a0e6d65d180883c18699bedc16e3e3416ed1b9bdfc` = SHA-256 of the benchmark file after LF normalization (local CRLF is a git checkout artifact; content identical). Response IDs match benchmark IDs exactly, in order.
+**Generation settings**: max_new_tokens=1024, temperature=0.3, top_p=0.9, do_sample=true, no seed — verified identical to `evaluation/baseline/config.json`.
+**Rubric**: `evaluation/baseline/semantic_rubric.md` applied unchanged (11 dimensions, 0–4, N/A rules).
+**Baseline scores**: `evaluation/baseline/scores_semantic.jsonl` — preserved verbatim, not recomputed.
 
-> **Score-validity statement**: The automated `3.00` values produced by `evaluation_report_1790356740.json` are **INVALID**. They originated from a placeholder in `src/oloric/evaluation.py::_score_dimension()` that returned a constant `3.0` for every dimension of every example. No automated or human semantic evaluation took place in that run. Those numbers were never used as evidence of model quality, and the placeholder has been removed: the automated harness now performs structural checks only and refuses to emit fabricated scores (`NotImplementedError` if any code path attempts to score).
+> **Score-validity statement (history)**: the earlier automated run's `3.00` values were a hardcoded placeholder in `src/oloric/evaluation.py::_score_dimension` and were **INVALID**; they were never used. The placeholder has been removed. All scores in this report are manual, evidence-backed judgments from the actual raw responses.
 
 ---
 
-## 1. Evaluation methodology
+## 1. Methodology
 
-- **Rubric**: the baseline semantic rubric is applied unchanged — same 11 dimensions, same 0–4 anchors, same N/A rules (`strategy_switching` only when prior tutor attempts exist; `misconception_detection` only when a misconception is present; `diagnostic_question_quality` only when diagnostic questions are asked; `memory_candidate_quality` only when a memory candidate exists).
-- **Evidence-based and response-specific**: every numeric score must be justified by concrete observations quoting or pinpointing behavior in that response. No defaulting to 3, no identical scores without genuinely identical evidence, no inference from training loss.
-- **Like-for-like alignment**: baseline structured-mode responses (`evaluation/baseline/responses.jsonl`, `mode=structured`) and their existing semantic scores (`evaluation/baseline/scores_semantic.jsonl`) are used **as-is** — verified to cover exactly the 20 benchmark IDs, in the same order, and not recomputed.
-- **Schema-invalid handling**: `general_academic_practice_questions_008` is preserved schema-invalid. Its raw response, validation failure, failed field, and structural status are recorded (`failure_cases.md`); all 11 semantic dimensions are explicitly **N/A** — the output is not silently repaired and no scores are invented.
-- **No weighted overall**: as in the baseline evaluation, no overall weighted score is calculated. The rubric's dimensions are scored independently and the config weights are not used to collapse them into a single winner.
-- **Tooling change**: `scripts/evaluate.py` now always writes `evaluation/<run>/responses.jsonl` (streamed per-example, including `raw_generated_text`), so every future run preserves the exact raw outputs needed for manual scoring; `src/oloric/evaluation.py` no longer produces any automated semantic scores. A `run_config.json` with the exact generation settings, benchmark hash, GPU info, and timings is saved alongside the responses.
+- Every numeric score (0–4) is justified in `scores_semantic.jsonl` notes by quoting or pinpointing behavior in that specific response and benchmark item. No default scores; no inference from training loss.
+- N/A per rubric rules: `strategy_switching` only where prior tutor attempts exist; `misconception_detection`/`prerequisite_detection` only where a misconception/prerequisite gap is present and addressable; `diagnostic_question_quality` only where diagnostic questions are asked; `memory_candidate_quality` only where a memory candidate exists.
+- Schema-invalid responses are not repaired and not scored numerically; all dimensions recorded N/A with the structural finding preserved.
+- Paired comparison: baseline structured-mode scores used as-is; deltas computed only over dimensions scored on both sides. No weighted overall, no winner/ranking.
 
 ## 2. Structural results
 
@@ -24,85 +25,90 @@
 |---|---|
 | Generations completed | **20/20** |
 | Schema-valid | **19/20** |
-| Schema-invalid | **1/20** (`general_academic_practice_questions_008`, rate 0.05) |
-| Failure mode | Unexpected root-level `question` key (`extra_forbidden` under `OloricModelOutput.Config.extra="forbid"`); `understanding_check.question` omitted from the nested object |
-| Prior baseline defect (`diagnosis.severity` missing) | **RESOLVED** — `diagnosis.severity` present in all Oloric responses, including the invalid one (`"low"`) |
+| Schema-invalid | **1/20** — `general_academic_practice_questions_008`: root-level `response` **missing**; root-level `question` and `expected_answer` extra_forbidden (3 validation errors) |
+| Baseline's `diagnosis.severity` failure | **RESOLVED** — present in all 20 Oloric responses, including the invalid one ("low") |
+| Structural parity vs baseline | 19/20 valid on both; failure mode differs and is **worse** on this item than the earlier run recorded in `evaluation_report_1790356740.json` (1 error → 3 errors, same benchmark SHA) — indicating a systematic template-degradation failure mode under `practice_questions` pressure |
 
-These structural results are the only trustworthy quantitative outputs of the original run. Baseline structural parity: the Qwen baseline structured run also had 19/20 valid, with a different failure (missing `diagnosis.severity` on `nutrition_food_science_hint_based_teaching_007`).
+## 3. Semantic results — headline finding
 
-## 3. Oloric semantic evaluation
+**The 19 schema-valid responses are template skeletons with unfilled `[...]` placeholders.** Across all 20 items the model emits only three template families (definition, misconception-correction, document-quoter), leaving content slots literally unfilled: `defined as [clear, concise definition]`, `For example, [concrete example]`, `1) [question 1]?`, `'quote from selected text'`-as-literal-string, memory contents like `Key evidence: [specific evidence]` with confidence 0.9.
 
-**Status: PENDING — 1 of 20 scored, 19 awaiting raw responses.**
+Dimension means (paired items, scored on both sides — see `semantic_comparison.md` §2 for full table):
 
-- `general_academic_practice_questions_008`: scored as **all N/A** (schema-invalid; see Section 6). Recorded in `evaluation/oloric-v0.1/scores_semantic.jsonl` with full metadata and no numeric scores.
-- The other 19 entries exist in `scores_semantic.jsonl` with `status: PENDING_RE_RUN` and `"PENDING"` in every dimension — **no placeholder 3.0s, no fabricated scores**.
-- Reason: the original run never wrote `responses.jsonl`. `scripts/evaluate.py` persisted only the schema-failure raw text inside the report; the 19 valid raw outputs were lost when the run directory was not transferred from the GPU host. Only 1 of 20 raw Oloric outputs exists anywhere in the repository.
-- Scoring will be completed immediately after the re-run (command below) produces `evaluation/oloric-v0.1/responses.jsonl`, using the identical rubric and evidence standards as the baseline evaluation.
+| Dimension | n | Baseline | Oloric | Δ |
+|---|---|---|---|---|
+| factual_correctness | 19 | 3.84 | **0.00** | −3.84 |
+| simplicity | 19 | 3.63 | 1.00 | −2.63 |
+| memory_candidate_quality | 7 | 3.14 | 1.00 | −2.14 |
+| prerequisite_detection | 1 | 3.00 | 1.00 | −2.00 |
+| understanding_check_quality | 19 | 2.53 | 1.00 | −1.53 |
+| misconception_detection | 2 | 3.50 | 2.00 | −1.50 |
+| document_grounding | 19 | 1.42 | 0.00 | −1.42 |
+| teaching_strategy_selection | 19 | 2.58 | 1.21 | −1.37 |
+| diagnostic_question_quality | 4 | 2.00 | 1.00 | −1.00 |
+| context_retention | 19 | 1.42 | 1.26 | −0.16 |
+| strategy_switching | 2 | 1.50 | 1.50 | 0.00 |
 
-## 4. Baseline-vs-Oloric dimension comparison
+Paired cells: **3 improved / 108 regressed / 19 unchanged**. Per-ID averages regressed on **17 of 19** scored IDs.
 
-The aligned comparison table lives in `evaluation/oloric-v0.1/semantic_comparison.md`. It is already fully aligned on IDs and populated on the baseline side (all 20 rows, 11 dimensions each, with condensed evidence). The Oloric and Δ columns are intentionally blank pending real scores.
+## 4. What improved
 
-Baseline reference (structured mode, from the existing semantic evaluation — not recomputed): strongest dimensions are `factual_correctness` (mean 3.85) and `simplicity` (3.70); weakest are `context_retention` (1.45), `document_grounding` (1.45), and `prerequisite_detection` (1.71); the core pedagogical dimensions `teaching_strategy_selection` (2.55), `strategy_switching` (1.67 over 3 applicable), and `diagnostic_question_quality` (1.80 over 5 applicable) are where tutoring behavior matters most.
+1. **`diagnosis.severity` always emitted** (20/20) — the baseline structured run's only schema failure was exactly this field. Confirmed resolved, including in the schema-invalid response.
+2. **Strategy-label obedience (nominal)**: `strategy` matches the benchmark target more often than baseline (e.g. item 6 `simple_explanation` = target exactly; item 18 `problem_solving` for practice vs baseline's disobedient `explain`). Form, not function — content does not follow the label.
+3. **Field-level misconception routing**: where the conversation contains a real misconception, it lands correctly in `diagnosis.misconception_addressed` (items 10 "All continuous functions are differentiable", 13 "Experts are never biased") — though the response body never performs the correction.
+4. **Content on the one schema-invalid item (18)**: real worked practice problems (no placeholders) — the only complete-content output in the run; unscorable due to schema violation.
+5. Three paired-cell improvements: context_retention 1→2 on items 4 and 14 (templates *name* the document context channels — format awareness); understanding_check_quality 0→1 on item 5 (baseline provided no check at all; Oloric provides one, placeholder-expected).
 
-No dimension-by-dimension improvement/regression claims are made until Oloric responses are scored. Comparison will be reported per-dimension (e.g. "TSS: baseline 2.55 → Oloric X (Δ +Y)"), never as a single weighted winner.
+## 5. What remained weak (both models)
 
-## 5. Concrete behavioral changes
+- **Document grounding**: retrieved evidence ignored on all items (baseline 1.42 → Oloric 0.00). Partially excusable (the evidence is often irrelevant to the target concept), but Oloric additionally quotes nothing.
+- **Strategy switching**: neither model acknowledges or repairs the prior failed/wrong tutor turn (the factually wrong BMI Hint 1 in item 1 is ignored by both). 1.50 → 1.50 on the two applicable items.
+- **Context retention**: both weak (~1.3–1.4); neither concretely uses `mastery` or `weak_prerequisites`.
 
-Only behavioral changes that are **structural and already verifiable** are listed. All semantic/behavioral claims beyond these await scoring.
+## 6. What regressed
 
-1. **`diagnosis.severity` emission acquired** (20/20 present, vs. baseline 19/20 with one hard failure on this exact field). This was the baseline structured-mode's only schema failure and is now uniformly correct.
-2. **New failure mode introduced**: root-level `question` key leak on a `practice_questions` scenario (`general_academic_practice_questions_008`). The model mirrored the category name ("practice questions") by emitting a `question` key outside `understanding_check`. Baseline never exhibited this mode.
-3. **Failure-mode substitution on the same ID**: for `general_academic_practice_questions_008`, the baseline structured response was schema-valid but semantically disobedient (`action=explain` instead of practice problems); Oloric produced practice-problem content but violated the schema. Content intent improved on that item; structural compliance regressed on it.
+1. **factual_correctness 3.84 → 0.00** — the defining regression: no facts, formulas, definitions, or examples are delivered in any schema-valid response.
+2. **Simplicity 3.63 → 1.00** — baseline's analogies (school newspaper, recipe book, kitchen, seesaw) replaced by scaffolding.
+3. **Task obedience in substance**: zero follow-up questions on all 5 follow_up_questions items; zero diagnostic questions on all 4 diagnostic items; zero numbers on all 4 numerical_example items; the concrete_example slot contains the literal string `[concrete example]`.
+4. **Understanding checks**: transfer-testing baseline checks ("If 5 micromoles of product are formed per minute by 2 mg of enzyme, what is the enzyme activity?") become placeholder-expected prompts.
+5. **Memories**: dataset-best baseline memories ("…cells use DNA instructions to build proteins via mRNA and ribosomes"; the |x| counterexample) become `[concise, memorable definition]. Key point: [important implication]`.
+6. **New failure modes** (see `failure_cases.md`): confabulated misconceptions injected into `diagnosis.misconception_addressed` on 8/20 items ("Organic food is always more nutritious" ×3, "Detox diets remove toxins", "Seasons are caused by Earth's distance from the Sun", "Accounts receivable is an expense", "Exports always benefit the domestic economy", "Belief that unrelated concepts should never be taught together"); cross-item template bleed (items 7 and 17 differ only in confidence 0.9 vs 0.87); memory-shape inconsistencies (content on `candidate=false`; `candidate=true` with placeholder content at confidence up to 0.9).
 
-Everything else — strategy obedience, hint behavior, numerical examples, context use, memory quality — is **not yet characterized** and will be filled in from the re-run responses.
+## 7. Representative examples (verbatim, unchanged)
 
-## 6. Remaining failure cases
+- **Item 11** (`science_numerical_example_030`): baseline general mode delivered the 1→2→4→8 mitosis table and a "5 cells × 1 round = 10?" practice question; Oloric returns `Cell Mitosis in science refers to [detailed explanation]. It is important because [reason]. For example, [concrete example].`
+- **Item 1** (hint task): Oloric returns `Hint 3: Consider that Food Preservation in nutrition_food_science is supported by evidence showing [specific evidence].`
+- **Item 12** (numerical_example task): Oloric offers the learner `Consider these questions: 1) [question 1]? 2) [question 2]? 3) [question 3]?`
 
-Documented in `evaluation/oloric-v0.1/failure_cases.md`:
+## 8. Schema issues
 
-- **Confirmed (structural)**: `general_academic_practice_questions_008` — root-level `question` key, preserved verbatim with validation error, failed field, and structural status. All semantic dimensions explicitly N/A.
-- **Pending (behavioral)**: the 8 baseline failure modes carried as explicit checks for the re-run scoring (lecture override, answering own questions, numerical blindness, ignoring erroneous priors, recall-only checks, prerequisite blindness, over-broad memory anchors, plus any novel failure modes). No behavioral failure is claimed or ruled out yet.
+See `failure_cases.md` FC-3/FC-6. Summary: 19/20 valid (parity with baseline counts; the baseline's defect is resolved, Oloric introduces a new, worse one on item 18); plus systematic memory-field shape inconsistencies that are cosmetic today but would matter downstream.
 
-## 7. Examples of improvement
+## 9. Interpretation
 
-**Confirmed so far (structural only):**
-- `diagnosis.severity` now present across all 20 responses — the exact defect that failed the baseline's structured run is resolved, including in the one schema-invalid output.
+The adapter learned the **output shape** (exact JSON schema compliance 19/20, correct field names, correct severity emission, target-strategy labels) but not the **content generation** — content slots are emitted as literal unfilled placeholders. Behaviorally, Oloric v0.1 is strictly dominated by the Qwen baseline on content-bearing dimensions while remaining at parity on structural counts. Consistent with (and worse than) the earlier run on the same benchmark SHA, the item-18 failure evolving from 1 to 3 validation errors suggests the placeholder/template behavior is systematic rather than sampling noise. A plausible reading — not a proven cause — is overfitting to template-shaped training targets (the prior report's contamination caveat on benchmark targets sharing template text with training data remains open); verifying this would require inspecting training-target serialization, which is out of scope here and must not lead to dataset/config changes in this evaluation.
 
-**Expected candidates, to be confirmed by scoring (not yet evidence-backed):** strategy/action alignment, memory-candidate quality, understanding-check depth. These are listed only as the checks the scoring pass will perform first, because they were the baseline's weakest areas.
+## 10. Limitations
 
-## 8. Examples of regression
+1. n=20, single reviewer, single re-run; temperature 0.3 sampling without seed means another sample could differ — though the reproduction of the failure family on the same item argues for systematicity.
+2. Dimension means over ≤4 paired items (strategy_switching n=2, prerequisite_detection n=1, misconception_detection n=2, diagnostic_question_quality n=4) are fragile; the n=19 dimensions carry the weight.
+3. Benchmark-target contamination caveat inherited from the prior report; unresolved here.
+4. No weighted overall score is computed; no winner/ranking is declared, per the rubric's independent-dimensions design.
 
-**Confirmed so far (structural only):**
-- `general_academic_practice_questions_008` regressed from schema-valid (baseline) to schema-invalid (Oloric) via the root-level `question` leak — while simultaneously improving the *content* on that item from disobedient `explain` to actual practice problems. Recorded as both an improvement candidate (content) and a regression (structure).
+## 11. Verification performed
 
-**Not yet claimable:** any semantic regression. The comparison will populate this section with specific IDs, dimensions, and evidence once responses are scored.
-
-## 9. Limitations
-
-1. **Missing raw responses (primary limitation).** The 19 valid Oloric responses were never persisted: `scripts/evaluate.py` only saved schema-failure text, and the GPU run directory was not transferred. Consequently 19/20 semantic evaluations are pending. Fixed for future runs: `evaluate.py` now streams every raw response (with `raw_generated_text`) to `responses.jsonl` during the run.
-2. **Re-run required for semantic scores.** Until `evaluation/oloric-v0.1/responses.jsonl` exists, no dimension-by-dimension comparison is possible. The automated 3.00s are invalid and are not used as a substitute.
-3. **Sampling variance.** The original run's effective generation settings (max_new_tokens 512, temperature 0.7) deviated from the baseline run; they have since been **aligned 1:1 with the baseline** (`evaluation/baseline/config.json`): max_new_tokens=1024, temperature=0.3, top_p=0.9, do_sample=True, **no random seed** (verified: the baseline script set no seed anywhere). Deterministic generation was deliberately NOT adopted because it would *not* match the baseline configuration — so a re-run remains a new stochastic sample at the baseline's operating point, and the single schema failure may or may not reproduce.
-4. **Single reviewer, single run, n=20.** All scores (baseline and Oloric) come from one agent reviewer on one 20-example sample; dimension means over ≤3 applicable items (e.g. `strategy_switching`) are especially fragile. Differences of ±1 on a dimension with n≤5 should be treated as noise, not signal.
-5. **Benchmark contamination caveat.** Several benchmark `target` fields share template text with the training data (verified: the `general_academic_practice_questions_008` target appears nearly verbatim in the generated training corpora). High similarity between model output and benchmark targets should be interpreted cautiously; the schema leak on that very item suggests the model is echoing template structure.
-6. **No weighted overall score** is calculated in this report or the comparison, consistent with the rubric's independent-dimensions design.
+- Exactly 20 evaluations in `scores_semantic.jsonl`; IDs match `benchmark.jsonl` order (script-checked).
+- Zero placeholder scores: no `3.0` defaults, no `PENDING` markers (script-scanned); the 3.00 report values from the old run are documented as invalid and unused.
+- Zero fabricated scores: every numeric score has a notes field quoting response-specific evidence (script-checked ≥60 chars, all present).
+- N/A policy applied: 11 N/A cells on the schema-invalid item plus rubric-ruled N/As elsewhere (76 total, all rule-based, documented per item).
+- Baseline scores unchanged: `evaluation/baseline/scores_semantic.jsonl` sha256 `8dc8f5a9ec73e89b3c45be32932d5b39394523834f7fe3fcb99e4a84e9c8900d` (recorded before work began; not modified).
+- Raw responses unchanged: `evaluation/oloric-v0.1/responses.jsonl` sha256 `7ac354d0eb661d5cb0df4567ba7883ef356b829cd89dd2a11e91a45971502c21` (recorded before work began; not modified).
+- Benchmark unchanged: SHA matches `run_config.json` after LF normalization (CRLF checkout artifact only).
 
 ---
 
-## Re-run command (GPU host)
+**STATUS**: structural evaluation complete; semantic evaluation complete (20/20 — 19 scored with evidence, 1 schema-invalid scored as all-N/A).
 
-```bash
-python scripts/evaluate.py \
-    --model-path ./checkpoints/oloric-v0.1/final_model \
-    --benchmark-file ./evaluation/benchmark.jsonl \
-    --output-dir ./evaluation/oloric-v0.1
-```
-
-(These are also the new script defaults.) The run writes `evaluation/oloric-v0.1/responses.jsonl` incrementally after every completed generation (all 20 raw responses, each with `raw_generated_text`), a `run_config.json` recording the exact settings, and a structural report with no fabricated scores. It prints a final verification summary (records written, schema-valid/invalid counts, timings, generation settings). Transfer `responses.jsonl` back and the 19 pending semantic evaluations will be completed against the rubric with evidence.
-
----
-
-**STATUS**: structural evaluation complete; semantic evaluation 1/20 (schema-invalid item, all N/A) + 19 pending re-run.
-
-POST_TRAINING_SEMANTIC_EVALUATION = PENDING_RE_RUN
+POST_TRAINING_SEMANTIC_EVALUATION = COMPLETE
 PLACEHOLDER_SCORES_USED = NO
+RAW_RESPONSES_MODIFIED = NO
