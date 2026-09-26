@@ -8,7 +8,12 @@ from typing import Any, Dict, List, Optional, Tuple
 from transformers import PreTrainedTokenizer
 
 from .config import config
-from .schemas.model_input import OloricModelInput
+from .schemas.model_input import (
+    ConversationTurn,
+    DocumentContext,
+    LearnerState,
+    OloricModelInput,
+)
 from .schemas.model_output import Diagnosis, Memory, OloricModelOutput, UnderstandingCheck
 
 
@@ -57,11 +62,12 @@ class OloricFormatter:
                 history += f"\n\n### Student:\n{turn.content}"
             else:
                 history += f"\n\n### Tutor:\n{turn.content}"
+        inst = model_input.instruction or model_input.task
         prompt = (
             "Below is an instruction that describes a task, paired with input "
             "that provides further context. Write a response that appropriately "
             "completes the request.\n\n"
-            f"### Instruction:\n{model_input.task}\n\n"
+            f"### Instruction:\n{inst}\n\n"
             f"### Input:\n{system_content}{history}\n\n"
             "### Response:\n"
         )
@@ -92,8 +98,10 @@ class OloricFormatter:
         for turn in model_input.conversation_context:
             history_parts.append(f"{turn.role.capitalize()}: {turn.content}")
         history = "\n".join(history_parts)
+        inst_line = f"Instruction: {model_input.instruction}\n" if model_input.instruction else ""
         prompt = (
             f"Task: {model_input.task}\n\n"
+            f"{inst_line}"
             f"Context:\n{system_content}\n\n"
             f"Conversation History:\n{history}\n\n"
             "Response:"
@@ -131,14 +139,21 @@ class OloricFormatter:
             f"- Weak Prerequisites: {weak_pre}",
             f"- Known Misconceptions: {known_mis}",
             f"\nCurrent Goal: {model_input.current_goal}",
-            "\nBased on the conversation history and learner state, choose the "
-            "appropriate tutoring action and strategy.",
         ]
+        if model_input.task:
+            system_parts.append(f"- Tutoring Task: {model_input.task}")
+        if model_input.instruction:
+            system_parts.append(f"- Instruction: {model_input.instruction}")
+        system_parts.append(
+            "\nBased on the conversation history and learner state, choose the "
+            "appropriate tutoring action and strategy."
+        )
         if doc_ctx.retrieved_evidence:
             system_parts.append("\nRetrieved Evidence:")
             for evidence in doc_ctx.retrieved_evidence[:3]:
                 system_parts.append(f"- {evidence}")
         return "\n".join(system_parts)
+
 
     def format_output(self, model_output: OloricModelOutput) -> str:
         return model_output.json()
@@ -187,6 +202,10 @@ class OloricFormatter:
     # Tokenization (NEW — fixes TrainingExample collator crash)
     # ------------------------------------------------------------------
 
+    def example_to_model_input(self, example_dict: Dict[str, Any]) -> OloricModelInput:
+        """Helper method delegating to example_to_model_input."""
+        return example_to_model_input(example_dict)
+
     def build_prompt_and_target(self, example_dict: Dict[str, Any]) -> Tuple[str, str]:
         """
         Convert a raw TrainingExample dict (from train.jsonl) into
@@ -195,14 +214,7 @@ class OloricFormatter:
         The prompt is produced by ``format_input`` via OloricModelInput.
         The target is the full JSON serialisation of the ``target`` field.
         """
-        ctx = example_dict.get("context", {})
-        model_input = OloricModelInput(
-            task=ctx.get("task", example_dict.get("instruction", "Help the student.")),
-            document_context=ctx.get("document_context", {}),
-            learner_state=ctx.get("learner_state", {}),
-            conversation_context=ctx.get("conversation_context", []),
-            current_goal=ctx.get("current_goal", ""),
-        )
+        model_input = self.example_to_model_input(example_dict)
         prompt_text = self.format_input(model_input)
         target_dict = example_dict.get("target", {})
         target_text = json.dumps(target_dict, ensure_ascii=False)
@@ -288,3 +300,85 @@ class OloricFormatter:
             "attention_mask": all_attention_masks,
             "labels":         all_labels,
         }
+
+
+def example_to_model_input(example_dict: Dict[str, Any]) -> OloricModelInput:
+    """
+    Convert an example dictionary (from benchmark, training split, or dataset)
+    into a fully populated OloricModelInput object, preserving task, instruction,
+    document context, learner state, and conversation turns.
+    """
+    ctx = example_dict.get("context", {})
+    if not ctx and ("document_context" in example_dict or "learner_state" in example_dict):
+        ctx = example_dict
+
+    instruction = example_dict.get("instruction") or ctx.get("instruction")
+
+    task = example_dict.get("task")
+    if not task or task == "resolve_confusion":
+        task = (
+            example_dict.get("category")
+            or (ctx.get("task") if ctx.get("task") != "resolve_confusion" else None)
+            or task
+            or ctx.get("task")
+            or instruction
+            or "resolve_confusion"
+        )
+
+    doc_ctx_raw = ctx.get("document_context", {})
+    if isinstance(doc_ctx_raw, DocumentContext):
+        doc_ctx = doc_ctx_raw
+    elif isinstance(doc_ctx_raw, dict):
+        doc_ctx = DocumentContext(
+            document_id=doc_ctx_raw.get("document_id", "doc_default"),
+            title=doc_ctx_raw.get("title", "Study Document"),
+            page=doc_ctx_raw.get("page", 1),
+            section=doc_ctx_raw.get("section", "General"),
+            selected_text=doc_ctx_raw.get("selected_text", ""),
+            surrounding_context=doc_ctx_raw.get("surrounding_context", ""),
+            retrieved_evidence=doc_ctx_raw.get("retrieved_evidence", [])
+        )
+    else:
+        doc_ctx = DocumentContext(
+            document_id="doc_default", title="Study Document", page=1,
+            section="General", selected_text="", surrounding_context="",
+            retrieved_evidence=[]
+        )
+
+    ls_raw = ctx.get("learner_state", {})
+    if isinstance(ls_raw, LearnerState):
+        learner_state = ls_raw
+    elif isinstance(ls_raw, dict):
+        learner_state = LearnerState(
+            level=ls_raw.get("level", "intermediate"),
+            concept=ls_raw.get("concept", "general_topic"),
+            mastery=float(ls_raw.get("mastery", 0.5)),
+            known_prerequisites=ls_raw.get("known_prerequisites", []),
+            weak_prerequisites=ls_raw.get("weak_prerequisites", []),
+            known_misconceptions=ls_raw.get("known_misconceptions", [])
+        )
+    else:
+        learner_state = LearnerState(
+            level="intermediate", concept="general_topic", mastery=0.5,
+            known_prerequisites=[], weak_prerequisites=[], known_misconceptions=[]
+        )
+
+    raw_turns = ctx.get("conversation_context") or ctx.get("conversation_turns", [])
+    turns = []
+    for t in raw_turns:
+        if isinstance(t, ConversationTurn):
+            turns.append(t)
+        elif isinstance(t, dict):
+            turns.append(ConversationTurn(role=t.get("role", "student"), content=t.get("content", "")))
+
+    concept_name = learner_state.concept if learner_state else "the concept"
+    current_goal = ctx.get("current_goal") or f"Understand {concept_name} well enough to apply it"
+
+    return OloricModelInput(
+        task=str(task),
+        document_context=doc_ctx,
+        learner_state=learner_state,
+        conversation_context=turns,
+        current_goal=str(current_goal),
+        instruction=str(instruction) if instruction else None
+    )

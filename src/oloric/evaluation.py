@@ -82,8 +82,14 @@ class OloricEvaluator:
         """
         example_id = example.get("id", "unknown")
 
-        # Convert context and target to proper objects
-        context = OloricModelInput(**example["context"])
+        engine = self.inference_engine if self.inference_engine is not None else inference_engine
+
+        # Convert context and target to proper objects preserving complete context & instruction
+        if engine is not None and hasattr(engine, "formatter") and engine.formatter is not None:
+            context = engine.formatter.example_to_model_input(example)
+        else:
+            from .formatting import example_to_model_input
+            context = example_to_model_input(example)
         expected_output = OloricModelOutput(**example["target"])
 
         # --- Generate model output & catch schema failures ---
@@ -92,7 +98,6 @@ class OloricEvaluator:
         schema_valid = True
         validation_error_msg: Optional[str] = None
 
-        engine = self.inference_engine if self.inference_engine is not None else inference_engine
 
         try:
             model_output = engine.generate_response(context)
