@@ -1,0 +1,36 @@
+{
+  "model_id": "Qwen/Qwen3-4B-Instruct-2507",
+  "adapter_path": "./checkpoints/oloric-v0.3/final_model",
+  "adapter_present": true,
+  "generation_config": {
+    "max_new_tokens": 1024,
+    "temperature": 0.3,
+    "top_p": 0.9,
+    "do_sample": true,
+    "seed": null
+  },
+  "deterministic": false,
+  "quantization": {
+    "load_in_4bit": true,
+    "bnb_4bit_quant_type": "nf4",
+    "bnb_4bit_use_double_quant": true,
+    "bnb_4bit_compute_dtype": "bfloat16"
+  },
+  "benchmark_file": "evaluation/benchmark_docground_v1.jsonl",
+  "benchmark_hash": "acedb1b21d6cc950101a4fcd2093f3a32dbdcf75c77236ab3ccdbf5ae5579cb7",
+  "gpu": {
+    "name": "NVIDIA L4",
+    "total_vram_gb": 22.03,
+    "cuda_available": true
+  },
+  "timestamp": "2026-09-27T04:36:56.754499+00:00",
+  "model_load_time_seconds": 5.2,
+  "baseline_reference": {
+    "config_file": "evaluation/baseline/config.json",
+    "max_new_tokens": 1024,
+    "temperature": 0.3,
+    "top_p": 0.9,
+    "do_sample": true,
+    "seed": null
+  }
+}
