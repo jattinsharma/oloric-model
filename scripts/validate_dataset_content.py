@@ -29,7 +29,7 @@ import sys
 from collections import Counter
 
 BRACKET = re.compile(r"\[[^\[\]\n]{1,80}\]")
-ANGLE = re.compile(r"<[^<>\n]{1,80}>")
+ANGLE = re.compile(r"<[a-zA-Z_][a-zA-Z0-9_\-\s]{0,60}>")
 GENERIC = re.compile(
     r"\bplaceholder\b|\bTODO\b|\bTBD\b|\bFIXME\b|\bLOREM\b"
     r"|to be filled|to be determined|fill in the blank|insert [^\n]{0,40} here",
@@ -43,6 +43,11 @@ ALLOWLIST = [
     re.compile(r"^\[H\u2083O\u207a\]$"),     # [H3O+]
     re.compile(r"^\[[A-Z][a-z]?[0-9]*[\u207a\u207b\u00b2\u00b3]{1,2}\]$"),  # [Na+], [Ca2+], ions
     re.compile(r"^\[\s*-?\d+(\.\d+)?(\s*,\s*-?\d+(\.\d+)?)*\s*\]$"),        # [0.4, 0.6], [1,2]
+    # Legitimate mathematical notation:
+    # 1. Composite function notation: [f(g(x))], [g(x)], [f(x)]
+    re.compile(r"^\[[a-zA-Z]\([a-zA-Z0-9_\(\)]+\)\]$"),
+    # 2. Definite integral evaluation brackets / single-variable algebraic terms: [3x²/2], [x²], [2x]
+    re.compile(r"^\[[-+]?\d*[a-zA-Z](\u00b2|\u00b3|\u2074|\u2075|\u2076|\u2077|\u2078|\u2079|\u2070|\^\d+)?(\s*/\s*\d+)?\]$"),
 ]
 
 LITERAL_SUSPECTS = [

@@ -1,0 +1,10 @@
+{
+  "num_examples": 20,
+  "num_schema_valid": 20,
+  "num_schema_failures": 0,
+  "schema_failure_rate": 0.0,
+  "semantic_scoring": "manual_only",
+  "overall_score": null,
+  "dimension_scores": {},
+  "schema_failures": []
+}

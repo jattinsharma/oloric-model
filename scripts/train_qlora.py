@@ -29,7 +29,7 @@ def load_dataset(file_path: str) -> List[TrainingExample]:
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Dataset file not found: {file_path}")
     
-    with open(file_path, 'r') as f:
+    with open(file_path, 'r', encoding='utf-8') as f:
         for line_num, line in enumerate(f, 1):
             line = line.strip()
             if not line:
@@ -70,6 +70,15 @@ def main():
                         help="Log every N steps")
     parser.add_argument("--save-steps", type=int, default=50,
                         help="Save checkpoint every N steps")
+    parser.add_argument("--trainer-output-dir", type=str, default=None,
+                        help="Output directory for HuggingFace Trainer intermediate "
+                             "checkpoints (overrides configs/model.yaml training.output_dir; "
+                             "final adapter still goes to --output-dir/final_model)")
+    parser.add_argument("--num-train-epochs", type=int, default=None,
+                        help="Override num_train_epochs from config (e.g. 1 for smoke runs)")
+    parser.add_argument("--dataset-size", type=int, default=None,
+                        help="Override dataset_size used for scheduler step math "
+                             "(should equal the actual number of training examples used)")
     
     args = parser.parse_args()
     
@@ -120,6 +129,15 @@ def main():
         if args.save_steps is not None:
             trainer.training_config["save_steps"] = args.save_steps
             trainer.training_config["eval_steps"] = args.save_steps
+        if args.trainer_output_dir is not None:
+            print(f"Overriding Trainer intermediate-checkpoint dir to: {args.trainer_output_dir}")
+            trainer.training_config["output_dir"] = args.trainer_output_dir
+        if args.num_train_epochs is not None:
+            print(f"Overriding num_train_epochs to: {args.num_train_epochs}")
+            trainer.training_config["num_train_epochs"] = args.num_train_epochs
+        if args.dataset_size is not None:
+            print(f"Overriding dataset_size to: {args.dataset_size}")
+            trainer.training_config["dataset_size"] = args.dataset_size
 
     except Exception as e:
         print(f"Error initializing trainer: {e}")
